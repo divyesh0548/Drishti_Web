@@ -1,0 +1,93 @@
+import { PageHeader, SectionCard, StatusPill } from "@/components/portal/cards";
+import { WorkspaceAdmin } from "@/components/portal/workspace-admin";
+import { assertRouteAccess } from "@/lib/navigation";
+import { resolveWorkspaceContextFromSearchParams } from "@/lib/portal-context";
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const context = await resolveWorkspaceContextFromSearchParams(searchParams ? await searchParams : undefined);
+  assertRouteAccess(context.currentUser.role, "/admin");
+
+  if (context.currentUser.role === "SITE_ADMIN") {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          eyebrow={`${context.company.name} | Site Administration`}
+          title="Workspace governance and provisioning"
+          description="Manage companies, role-aware access, signatories, and reporting controls without changing the underlying financial workflows."
+          meta={<StatusPill label="Site admin mode" tone="positive" />}
+        />
+        <WorkspaceAdmin context={context} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={`${context.company.name} | ${context.currentVersion.label}`}
+        title="Administration and statement controls"
+        description="Configure company users, signatories, and control assumptions for the active reporting workspace."
+        meta={<StatusPill label="Company admin mode" tone="positive" />}
+      />
+
+      <WorkspaceAdmin context={context} />
+
+      <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
+        <SectionCard title="Classification controls" eyebrow="Source rules and assumptions" action={<StatusPill label="Workbook mode" tone="positive" />}>
+          <div className="enterprise-table">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3 font-medium">Control</th>
+                  <th className="px-4 py-3 font-medium">Value</th>
+                  <th className="px-4 py-3 font-medium">Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { role: "Company", scope: context.company.name, users: "Company-scoped data folder" },
+                  { role: "Active version", scope: context.currentVersion.label, users: "Versioned statements and downloads" },
+                  { role: "Balance rule", scope: "Sum of trial balance rows", users: "Flags non-zero residuals" },
+                  { role: "GL prefix model", scope: "1/2/3/4 => BS/BS/P&L/P&L", users: "Primary statement routing" },
+                  { role: "Keyword model", scope: "Ledger description inference", users: "Subgroup classification" },
+                ].map((row) => (
+                  <tr key={row.role} className="border-t border-slate-200/70 dark:border-white/10">
+                    <td className="px-4 py-3 font-medium">{row.role}</td>
+                    <td className="px-4 py-3">{row.scope}</td>
+                    <td className="px-4 py-3">{row.users}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Current assumptions" eyebrow="What to validate next">
+          <div className="space-y-4">
+            {[
+              "Each company now has its own logic, versions, signatories, and statement format files in a separate workspace folder.",
+              "Finance users can create version snapshots from uploaded trial balance workbooks and optional statement workbooks.",
+              "Auditors are restricted to viewing and downloading statements, while finance users can also update grouping.",
+              "Configured auditors and directors print below exported statement outputs for the selected company.",
+            ].map((item) => (
+              <div key={item} className="rounded-[1.35rem] border border-slate-200/70 bg-slate-50/80 p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/70">
+                <p className="text-sm leading-6">{item}</p>
+              </div>
+            ))}
+
+            <div className="rounded-[1.35rem] border border-dashed border-teal-300 bg-teal-500/5 p-4 dark:border-teal-400/20">
+              <p className="text-sm font-medium">Next recommended enhancement</p>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                Replace heuristic statement mapping with a maintained chart-of-accounts mapping table so the generated financials can move from draft mode to controlled reporting.
+              </p>
+            </div>
+          </div>
+        </SectionCard>
+      </div>
+    </div>
+  );
+}

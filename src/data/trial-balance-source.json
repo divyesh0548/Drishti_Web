@@ -1,0 +1,1722 @@
+{
+  "sourceName": "Trial Balance.xlsx",
+  "sourcePath": "C:\\Users\\Shivam Chaturvedi\\Pictures\\Drishti\\Trial Balance.xlsx",
+  "lastModifiedIso": "2026-07-23T09:36:19.005Z",
+  "rows": [
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10000000",
+      "GL Description": "Equity Share Capital",
+      "Current Year": -1597890,
+      "Previous Year": -1365970
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10000004",
+      "GL Description": "0.01% Non-Cumulative CCPS",
+      "Current Year": -1999973649,
+      "Previous Year": -868680
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10100000",
+      "GL Description": "Security Premium Account",
+      "Current Year": -1560237693.96,
+      "Previous Year": -2888560445.96
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10100001",
+      "GL Description": "Retained earnings",
+      "Current Year": 205255407.87,
+      "Previous Year": 2371971.39
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10100002",
+      "GL Description": "Profit & Loss Account",
+      "Current Year": 7941080.54,
+      "Previous Year": 7941080.54
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10100009",
+      "GL Description": "IND AS - Opening Balance - Retained Earnings",
+      "Current Year": -38668.9,
+      "Previous Year": -38668.9
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10200014",
+      "GL Description": "Unrealised Gain/Loss on Borrowing",
+      "Current Year": -944485,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10200015",
+      "GL Description": "IND AS - Transaction Cost Impact on TL",
+      "Current Year": 2147916.43,
+      "Previous Year": 1284522.43
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10200016",
+      "GL Description": "TL_AXIS_ 923060053143888",
+      "Current Year": -1766899999.12,
+      "Previous Year": -2000000000
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10200018",
+      "GL Description": "TL_AXIS_924060051723539",
+      "Current Year": -362015481,
+      "Previous Year": -400000000
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10200019",
+      "GL Description": "TL_AXIS_926060049706405",
+      "Current Year": -105646541,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10300002",
+      "GL Description": "TL_HDFC_02400930000746",
+      "Current Year": -349999163.35,
+      "Previous Year": -247462601.79
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10400001",
+      "GL Description": "IND AS - Deferred Tax Liability",
+      "Current Year": 158838466.62,
+      "Previous Year": -238523.49
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10500000",
+      "GL Description": "Provision for Employee Benefits – Gratuity (Contra",
+      "Current Year": -4499741,
+      "Previous Year": -1940219
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10500001",
+      "GL Description": "Provision for Leave Salary",
+      "Current Year": -4772879,
+      "Previous Year": -2662538
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10600005",
+      "GL Description": "WCDL_HDFC",
+      "Current Year": -350000000,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10600010",
+      "GL Description": "Best Value Chem Pvt Ltd.",
+      "Current Year": -0.41,
+      "Previous Year": -265968343.41
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10600012",
+      "GL Description": "WCDL_Axis Bank",
+      "Current Year": -150000000,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10600014",
+      "GL Description": "HDFC Buyer’s Credit",
+      "Current Year": -25573757.5,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10800000",
+      "GL Description": "Payable - Raw Material Import",
+      "Current Year": -126396503.68,
+      "Previous Year": -23799281.01
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10800001",
+      "GL Description": "Payable - Raw Material Domestic",
+      "Current Year": -154331338.31,
+      "Previous Year": -53207755.67
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10800002",
+      "GL Description": "Payable - Packing Material",
+      "Current Year": -14985765.31,
+      "Previous Year": -6382962
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10800003",
+      "GL Description": "Payable - Fuel",
+      "Current Year": -18468224.01,
+      "Previous Year": -7927826.02
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10800004",
+      "GL Description": "Payable - Others",
+      "Current Year": -671402344.31,
+      "Previous Year": -167825540.7
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10800005",
+      "GL Description": "Payables - Employees",
+      "Current Year": 42051.22,
+      "Previous Year": -78704.78
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10800007",
+      "GL Description": "Payable - Forex",
+      "Current Year": -2836222.46,
+      "Previous Year": 179382.89
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10900000",
+      "GL Description": "Provision_Other Expenses",
+      "Current Year": -6785728.26,
+      "Previous Year": -48270629.7
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10900003",
+      "GL Description": "Provision_PF and ESIC Contribution by Company",
+      "Current Year": -461147,
+      "Previous Year": -311807
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10900007",
+      "GL Description": "Provision_Commission Charges",
+      "Current Year": -1991501.67,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10900012",
+      "GL Description": "Provision_C&F Export Cost",
+      "Current Year": -108764.12,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10900013",
+      "GL Description": "Provision_MSME Interest",
+      "Current Year": -6369417.54,
+      "Previous Year": -6369417.54
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10900016",
+      "GL Description": "Provision_Incentive",
+      "Current Year": -4000000,
+      "Previous Year": -2295777
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10900017",
+      "GL Description": "Provision_Bonus",
+      "Current Year": -1684697.5,
+      "Previous Year": -1443331.5
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "10900018",
+      "GL Description": "Salary Payable",
+      "Current Year": -119680.01,
+      "Previous Year": -6010925.99
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "11000001",
+      "GL Description": "TDS_Professional and Consulting_194J",
+      "Current Year": -382362.06,
+      "Previous Year": -604915.06
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "11000002",
+      "GL Description": "TDS_Contractors_194C",
+      "Current Year": -3257917.48,
+      "Previous Year": -1218102.76
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "11000003",
+      "GL Description": "TDS_Interest on borrowing_194A",
+      "Current Year": -0.17,
+      "Previous Year": -995290.17
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "11000005",
+      "GL Description": "TDS_Rent_194I",
+      "Current Year": -75369,
+      "Previous Year": -21113
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "11000006",
+      "GL Description": "TDS_Purchase on Goods_194Q",
+      "Current Year": -224723.73,
+      "Previous Year": -64627
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "11000007",
+      "GL Description": "TDS_Salary_192",
+      "Current Year": -608661,
+      "Previous Year": -627704
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "11000009",
+      "GL Description": "TDS_Land Purchase_194IA",
+      "Current Year": -109350,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "11000011",
+      "GL Description": "PF Employee Contribution",
+      "Current Year": -430291,
+      "Previous Year": -288873
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "11000012",
+      "GL Description": "Professional Tax",
+      "Current Year": -36800,
+      "Previous Year": -31400
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "11100000",
+      "GL Description": "Interest Accrued but not due",
+      "Current Year": -4318047,
+      "Previous Year": -1683162
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "11100002",
+      "GL Description": "Retention Money",
+      "Current Year": -176543.07,
+      "Previous Year": -104173676.48
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000000",
+      "GL Description": "Freehold land",
+      "Current Year": 93599471,
+      "Previous Year": 93599471
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000001",
+      "GL Description": "Building",
+      "Current Year": 1479712802.52,
+      "Previous Year": 1479119263.8
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000002",
+      "GL Description": "ACC_DEP_Building",
+      "Current Year": -80613681.62,
+      "Previous Year": -23521985.12
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000003",
+      "GL Description": "Plant and machinery",
+      "Current Year": 3409507596.72,
+      "Previous Year": 3385169564.52
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000004",
+      "GL Description": "ACC_DEP_Plant and machinery",
+      "Current Year": -332477970.79,
+      "Previous Year": -98387307.8
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000005",
+      "GL Description": "Office equiment",
+      "Current Year": 19595727,
+      "Previous Year": 19595727
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000006",
+      "GL Description": "ACC_DEP_Office equiment",
+      "Current Year": -4850245.23,
+      "Previous Year": -1127057.12
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000007",
+      "GL Description": "Computers",
+      "Current Year": 16903685.71,
+      "Previous Year": 16903685.71
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000008",
+      "GL Description": "ACC_DEP_Computers",
+      "Current Year": -5123125.78,
+      "Previous Year": -1509878.12
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000009",
+      "GL Description": "Furniture and fixtures",
+      "Current Year": 20587570.11,
+      "Previous Year": 20587570.11
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000010",
+      "GL Description": "ACC_DEP_Furniture and fixtures",
+      "Current Year": -2550479.37,
+      "Previous Year": -594660.1
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000011",
+      "GL Description": "Electrical fittings",
+      "Current Year": 133955865.7,
+      "Previous Year": 133494755.59
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000012",
+      "GL Description": "ACC_DEP_Electrical fittings",
+      "Current Year": -16585173.39,
+      "Previous Year": -3890620.15
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000015",
+      "GL Description": "Computer Software",
+      "Current Year": 4679369.24,
+      "Previous Year": 4679369.24
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000016",
+      "GL Description": "ACC_DEP_Computer Software",
+      "Current Year": -1796096.11,
+      "Previous Year": -314295.85
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000017",
+      "GL Description": "Leasehold Land",
+      "Current Year": 324389641,
+      "Previous Year": 324389641
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20000018",
+      "GL Description": "ACC_DEP_Leased Land",
+      "Current Year": -12764667.18,
+      "Previous Year": -9297332.93
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20100000",
+      "GL Description": "Capital Work In Progress",
+      "Current Year": 150735016.47,
+      "Previous Year": 60.24
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20100001",
+      "GL Description": "Capital Advances",
+      "Current Year": 1224019.38,
+      "Previous Year": 11010528.06
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20100002",
+      "GL Description": "Capital Work In Progress - Internal Orders",
+      "Current Year": -35792254.97,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20100003",
+      "GL Description": "Capital Advances_Audit Adjustment",
+      "Current Year": -41060,
+      "Previous Year": -41060
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20100004",
+      "GL Description": "AUC Cost",
+      "Current Year": 41000,
+      "Previous Year": 41000
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20200009",
+      "GL Description": "Investment - JSW RENEW ENERGY TWENTY- SIX LIMITED",
+      "Current Year": 1671110,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20300000",
+      "GL Description": "Deposit_Other",
+      "Current Year": 34062381.86,
+      "Previous Year": 27413904
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20300004",
+      "GL Description": "Deposit_Prohibition and Excise",
+      "Current Year": 1000,
+      "Previous Year": 1000
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20400001",
+      "GL Description": "IND AS - Deferred Tax Assets",
+      "Current Year": -0.72,
+      "Previous Year": 95917.28
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20500000",
+      "GL Description": "Raw Material Stock",
+      "Current Year": 152184826.02,
+      "Previous Year": 32146506.07
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20500001",
+      "GL Description": "Packing Material Stock",
+      "Current Year": 1251508.97,
+      "Previous Year": 2090466.14
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20500002",
+      "GL Description": "Fuel Stock",
+      "Current Year": 4992245.99,
+      "Previous Year": 1514975.19
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20500003",
+      "GL Description": "SFG Stock in Plants",
+      "Current Year": 186323305.1,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20500004",
+      "GL Description": "Finish Goods Stock",
+      "Current Year": 74707643.95,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20500005",
+      "GL Description": "Store and Spares -",
+      "Current Year": 31250536.31,
+      "Previous Year": 5470168.64
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20500006",
+      "GL Description": "Goods In Transit - Sales",
+      "Current Year": 227359886.9,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20500008",
+      "GL Description": "Inventory_Manual Entry",
+      "Current Year": -26917027.76,
+      "Previous Year": 39908783.71
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20600000",
+      "GL Description": "Receivables- Export",
+      "Current Year": 448850388.34,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20600001",
+      "GL Description": "Receivables-Domestic",
+      "Current Year": 108663807.14,
+      "Previous Year": 44942032.48
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20600002",
+      "GL Description": "Receivables- SEZ",
+      "Current Year": 146250,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20600003",
+      "GL Description": "Receivables- Deemed",
+      "Current Year": 592191.6,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20600004",
+      "GL Description": "Receivables- Scrap",
+      "Current Year": 162126.5,
+      "Previous Year": 633961.3
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20600006",
+      "GL Description": "Receivables- GIT",
+      "Current Year": -265383125.39,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20600007",
+      "GL Description": "Receivables- Forex",
+      "Current Year": 11074363.01,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20600009",
+      "GL Description": "Receivables- Advance",
+      "Current Year": -901805.08,
+      "Previous Year": -191373.5
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20600010",
+      "GL Description": "Provision for Expected Credit Loss",
+      "Current Year": -1495028,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20800110",
+      "GL Description": "CA_HDFC_57500000732637",
+      "Current Year": 475424.48,
+      "Previous Year": 475424.48
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20800111",
+      "GL Description": "CA_HDFC_57500000732637",
+      "Current Year": 3510039824.27,
+      "Previous Year": 1194993284.87
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20800112",
+      "GL Description": "CA_HDFC_57500000732637",
+      "Current Year": -3507438144.19,
+      "Previous Year": -1196902487.33
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20800121",
+      "GL Description": "CA_Axis_923020022099965",
+      "Current Year": 6324596796.96,
+      "Previous Year": 5669741007.08
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20800122",
+      "GL Description": "CA_Axis_923020022099965",
+      "Current Year": -6324596796.96,
+      "Previous Year": -5667521755.08
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20800151",
+      "GL Description": "CC_Axis_925030026102400",
+      "Current Year": 178392005,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20800152",
+      "GL Description": "CC_Axis_925030026102400",
+      "Current Year": -209356044.54,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "20900003",
+      "GL Description": "FD_Axis",
+      "Current Year": 5409283,
+      "Previous Year": 5036678
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000003",
+      "GL Description": "TDS Receiveable_194Q",
+      "Current Year": 594710.96,
+      "Previous Year": 35799
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000004",
+      "GL Description": "TDS Receivable_Other",
+      "Current Year": 15229.08,
+      "Previous Year": 1281187.08
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000007",
+      "GL Description": "GST Refund_Custom Department",
+      "Current Year": 69919201.91,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000008",
+      "GL Description": "CGST Payable",
+      "Current Year": -56666.53,
+      "Previous Year": -16738.64
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000009",
+      "GL Description": "SGST Payable",
+      "Current Year": -56666.53,
+      "Previous Year": -16738.64
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000010",
+      "GL Description": "IGST Payable",
+      "Current Year": -18474.82,
+      "Previous Year": -11013.8
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000011",
+      "GL Description": "CGST Receivable",
+      "Current Year": 220009791.1,
+      "Previous Year": 212112768.58
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000012",
+      "GL Description": "IGST Receivable",
+      "Current Year": -4.78,
+      "Previous Year": 87084777
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000013",
+      "GL Description": "SGST Receivable",
+      "Current Year": 302580396.1,
+      "Previous Year": 212112768.58
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000016",
+      "GL Description": "TCS Receivable",
+      "Current Year": -0.42,
+      "Previous Year": 24208.97
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000017",
+      "GL Description": "Duty Draw Back Receivables",
+      "Current Year": 481043,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21000018",
+      "GL Description": "ITC not in GSTR 2B",
+      "Current Year": 3547736,
+      "Previous Year": 1497682
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21100003",
+      "GL Description": "Other Receivables",
+      "Current Year": 1566032.27,
+      "Previous Year": 1538643.27
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21100004",
+      "GL Description": "Advances to Employees_IOU",
+      "Current Year": 0,
+      "Previous Year": 758
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21100008",
+      "GL Description": "Prepaid Expenses",
+      "Current Year": 16044031.87,
+      "Previous Year": 6901653.5
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21100009",
+      "GL Description": "MEIS/RODTEP Script",
+      "Current Year": 1776675.2,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21100011",
+      "GL Description": "Advance to Vendor",
+      "Current Year": 2145379.18,
+      "Previous Year": 1424896.13
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "21100014",
+      "GL Description": "IND AS - Receivable from employee (Finance Lease)",
+      "Current Year": 905891.45,
+      "Previous Year": 1230728.44
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30000000",
+      "GL Description": "Sales Export",
+      "Current Year": -1036713697.53,
+      "Previous Year": -2896800
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30000001",
+      "GL Description": "Domestic Sales",
+      "Current Year": -1019214439.98,
+      "Previous Year": -36004816.2
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30000002",
+      "GL Description": "Sales_Rate Difference",
+      "Current Year": 902532.25,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30000004",
+      "GL Description": "Scrap Sales",
+      "Current Year": -2878000,
+      "Previous Year": -4811525
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30000005",
+      "GL Description": "Duty Drawback Received",
+      "Current Year": -1400927,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30000007",
+      "GL Description": "Sales In transit",
+      "Current Year": 265383125.39,
+      "Previous Year": -1375000
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30000008",
+      "GL Description": "Domestic Sales Inter Company",
+      "Current Year": -551324467.37,
+      "Previous Year": -69165987.24
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30000009",
+      "GL Description": "Sales adjut-Manual",
+      "Current Year": 0,
+      "Previous Year": 4811525
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30100000",
+      "GL Description": "Unrealised Forex Gain/loss",
+      "Current Year": -7123642.75,
+      "Previous Year": -118301.89
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30100001",
+      "GL Description": "Realised Forex Gain/loss",
+      "Current Year": -14334688.69,
+      "Previous Year": -226317.04
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30100003",
+      "GL Description": "Interest On Deposit",
+      "Current Year": 0,
+      "Previous Year": -1538643.27
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30100004",
+      "GL Description": "Interest on Bank Deposit",
+      "Current Year": -414006,
+      "Previous Year": -250440
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30100005",
+      "GL Description": "Other Income",
+      "Current Year": -1670492.49,
+      "Previous Year": -67940.18
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30100008",
+      "GL Description": "Interest on Income Tax Refund",
+      "Current Year": 0,
+      "Previous Year": -59812
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30100013",
+      "GL Description": "Gain / Loss from MF Investment",
+      "Current Year": 0,
+      "Previous Year": -4891456.13
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30100015",
+      "GL Description": "IND AS - Interest Income",
+      "Current Year": -192594.37,
+      "Previous Year": -90892.48
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "30100016",
+      "GL Description": "MEIS/RODTEP Script",
+      "Current Year": -3945733,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100000",
+      "GL Description": "Custom Duty",
+      "Current Year": 614628,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100001",
+      "GL Description": "Import Cost on Material",
+      "Current Year": 3912006.73,
+      "Previous Year": -0.08
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100002",
+      "GL Description": "Freight Inward Local",
+      "Current Year": 2084498.93,
+      "Previous Year": 234308.82
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100005",
+      "GL Description": "Interest on Custom Duty",
+      "Current Year": 16312,
+      "Previous Year": 10000.3
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100006",
+      "GL Description": "COGS Packing Material",
+      "Current Year": 15400085.16,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100007",
+      "GL Description": "COGS SFG and FG",
+      "Current Year": 2452208959.15,
+      "Previous Year": 34055264.18
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100008",
+      "GL Description": "Consumption of Raw Material",
+      "Current Year": 1540004202.32,
+      "Previous Year": 72442537.9
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100009",
+      "GL Description": "Consumption of Semi-Finished Goods",
+      "Current Year": 9266581789.06,
+      "Previous Year": 43648143.68
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100010",
+      "GL Description": "Consumption of Finished Goods",
+      "Current Year": 17427435.02,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100011",
+      "GL Description": "Consumption of Packing Material",
+      "Current Year": 27957276.01,
+      "Previous Year": 3966283.86
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100012",
+      "GL Description": "Freight on Job Work",
+      "Current Year": 5443609.16,
+      "Previous Year": 177795
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40100014",
+      "GL Description": "Consumption_Manual",
+      "Current Year": -196470565.64,
+      "Previous Year": 727168
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40200000",
+      "GL Description": "COGM Material",
+      "Current Year": -9128362343.11,
+      "Previous Year": -76405643.7
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40200001",
+      "GL Description": "COGM SFG and FG",
+      "Current Year": -1698937640.84,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40200003",
+      "GL Description": "Price Difference Material",
+      "Current Year": 2866265.75,
+      "Previous Year": 1072575.36
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40200004",
+      "GL Description": "Price difference SFG and FG",
+      "Current Year": 1353458.67,
+      "Previous Year": -2669.66
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40200005",
+      "GL Description": "Price difference Stores and Spares",
+      "Current Year": -0.8,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40200006",
+      "GL Description": "Month end Adjustment - Material",
+      "Current Year": 33580782.18,
+      "Previous Year": 10988214.35
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40200010",
+      "GL Description": "Change in Stock",
+      "Current Year": -635366994.41,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40200011",
+      "GL Description": "COGM Material_Manual Entry",
+      "Current Year": 33154744.81,
+      "Previous Year": -38423397.71
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300000",
+      "GL Description": "Staff Welfare Expenses",
+      "Current Year": 9974369.1,
+      "Previous Year": 352846.7
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300001",
+      "GL Description": "Staff Recruitment and Other",
+      "Current Year": 1010484.64,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300002",
+      "GL Description": "Vehicle Hire Charges",
+      "Current Year": 21555386.51,
+      "Previous Year": 3015834.67
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300003",
+      "GL Description": "Admin Charges on PF",
+      "Current Year": 197503,
+      "Previous Year": 23295
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300004",
+      "GL Description": "Basic Salary",
+      "Current Year": 56968541.96,
+      "Previous Year": 9562593.38
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300005",
+      "GL Description": "Bonus_XYZ Employee",
+      "Current Year": 3889137,
+      "Previous Year": 62292
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300006",
+      "GL Description": "Company Contribution_PF",
+      "Current Year": 4893955,
+      "Previous Year": 579629
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300007",
+      "GL Description": "Conveyance Allowance",
+      "Current Year": 429677.42,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300008",
+      "GL Description": "Education Allowance",
+      "Current Year": 50566.51,
+      "Previous Year": 2632.26
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300010",
+      "GL Description": "Gratuity Expenses",
+      "Current Year": 2559522,
+      "Previous Year": -1178846
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300011",
+      "GL Description": "House Rent Allowance",
+      "Current Year": 19119475.48,
+      "Previous Year": 1240563.73
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300012",
+      "GL Description": "Leave Salary- XYZPL",
+      "Current Year": 3513846.89,
+      "Previous Year": -888759
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300013",
+      "GL Description": "Staff Training Expenses",
+      "Current Year": 275700,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300015",
+      "GL Description": "Medical Expenses",
+      "Current Year": 1439753.55,
+      "Previous Year": 9500
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300016",
+      "GL Description": "Other Allowance",
+      "Current Year": 24334274.73,
+      "Previous Year": 1534987.98
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300017",
+      "GL Description": "Productivity Incentive",
+      "Current Year": 4487647,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300018",
+      "GL Description": "Trainee Stipend",
+      "Current Year": 601523.17,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300019",
+      "GL Description": "Helper Allowance",
+      "Current Year": 933677.42,
+      "Previous Year": 8000
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300020",
+      "GL Description": "Uniform Allowance",
+      "Current Year": 158680.8,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40300024",
+      "GL Description": "Monthly Production Incentive",
+      "Current Year": 3672463,
+      "Previous Year": 273238
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400000",
+      "GL Description": "Interest on MSME",
+      "Current Year": 0,
+      "Previous Year": 5013308
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400001",
+      "GL Description": "Other Bank Charges",
+      "Current Year": 1476697.85,
+      "Previous Year": 10135.67
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400003",
+      "GL Description": "Export Collection_Charges",
+      "Current Year": 141162.78,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400004",
+      "GL Description": "Import Payment_Charges",
+      "Current Year": 185665.57,
+      "Previous Year": 50094.56
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400005",
+      "GL Description": "International Bank Charges",
+      "Current Year": 372402,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400008",
+      "GL Description": "Interest on Cash Credit",
+      "Current Year": 10196544,
+      "Previous Year": 1192
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400009",
+      "GL Description": "Interest on Term Loan",
+      "Current Year": 195923162,
+      "Previous Year": 69159839.49
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400011",
+      "GL Description": "Interest on WCDL",
+      "Current Year": 14132535,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400014",
+      "GL Description": "Processing and Stamp Duty Expense",
+      "Current Year": 26479573.84,
+      "Previous Year": 2007199
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400019",
+      "GL Description": "IND AS - Interest on TL",
+      "Current Year": 216610,
+      "Previous Year": 47620
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400024",
+      "GL Description": "Interest on Buyer’s Credit",
+      "Current Year": 1213222.49,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40400027",
+      "GL Description": "Interest on Inter Company Loan",
+      "Current Year": 24961796,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40500000",
+      "GL Description": "ACC_DEP_Building",
+      "Current Year": 57091696.5,
+      "Previous Year": 22880378.75
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40500001",
+      "GL Description": "ACC_DEP_Plant and machinery",
+      "Current Year": 234090662.99,
+      "Previous Year": 95748628.15
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40500002",
+      "GL Description": "ACC_DEP_Office equiment",
+      "Current Year": 3723188.11,
+      "Previous Year": 1127057.12
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40500003",
+      "GL Description": "ACC_DEP_Computers",
+      "Current Year": 3613247.66,
+      "Previous Year": 1467688.55
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40500004",
+      "GL Description": "ACC_DEP_Furniture and fixtures",
+      "Current Year": 1955819.27,
+      "Previous Year": 594660.1
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40500005",
+      "GL Description": "ACC_DEP_Electrical fittings",
+      "Current Year": 12694553.24,
+      "Previous Year": 3890620.15
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40500007",
+      "GL Description": "ACC_DEP_Computer Software",
+      "Current Year": 1481800.26,
+      "Previous Year": 314295.85
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40500008",
+      "GL Description": "ACC_DEP_Leasehold Land",
+      "Current Year": 3467334.25,
+      "Previous Year": 3467334.25
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40600000",
+      "GL Description": "Consumption of Fuel",
+      "Current Year": 104956532.01,
+      "Previous Year": 9522573.55
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40600002",
+      "GL Description": "Consumption of Stores and Spares",
+      "Current Year": 22471821.52,
+      "Previous Year": 2027753.38
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40600003",
+      "GL Description": "Consumption of Consumable Item",
+      "Current Year": -8850928.94,
+      "Previous Year": -1570775.47
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40600004",
+      "GL Description": "Power Cost",
+      "Current Year": 91253000.38,
+      "Previous Year": 12173006.96
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40600005",
+      "GL Description": "Labour Charges",
+      "Current Year": 56550189.74,
+      "Previous Year": 3914159
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40600006",
+      "GL Description": "Jobwork Charges",
+      "Current Year": 119707347.38,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40600007",
+      "GL Description": "Effluent Treatment Charges",
+      "Current Year": 26964731,
+      "Previous Year": 643551.84
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40600008",
+      "GL Description": "Lease Rent_Factory",
+      "Current Year": 1278021,
+      "Previous Year": 61500
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40600012",
+      "GL Description": "Consumption of of Steam purchased",
+      "Current Year": 237764,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700000",
+      "GL Description": "Repair and Maintance Labour",
+      "Current Year": 30939036.17,
+      "Previous Year": 1011893.11
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700001",
+      "GL Description": "Conveyance Expenses",
+      "Current Year": 1076590.97,
+      "Previous Year": 40000
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700002",
+      "GL Description": "Travelling Expenses_Foreign",
+      "Current Year": 2982177.99,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700003",
+      "GL Description": "Travelling Expenses_Domestic",
+      "Current Year": 3071823.89,
+      "Previous Year": 6665
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700004",
+      "GL Description": "Communication Expenses",
+      "Current Year": 466218.8,
+      "Previous Year": 27691.04
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700005",
+      "GL Description": "Annual Maintainance Contract",
+      "Current Year": 3362570.8,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700006",
+      "GL Description": "Power Cost_Corporate office",
+      "Current Year": 279038.17,
+      "Previous Year": 11098.82
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700007",
+      "GL Description": "Professional & Consulting Fees",
+      "Current Year": 12455317.76,
+      "Previous Year": 2941967.12
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700008",
+      "GL Description": "Rates and Taxes",
+      "Current Year": 2843956.82,
+      "Previous Year": 555235.06
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700009",
+      "GL Description": "Lease Rent_Office",
+      "Current Year": 576000,
+      "Previous Year": 120000
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700010",
+      "GL Description": "Reach Registration Charges",
+      "Current Year": 6985478.41,
+      "Previous Year": 8675890.6
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700011",
+      "GL Description": "Penalty Expense",
+      "Current Year": 130000,
+      "Previous Year": 5000
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700013",
+      "GL Description": "Balance Write Off",
+      "Current Year": 54760.46,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700014",
+      "GL Description": "Insurance Expense",
+      "Current Year": 10684520.72,
+      "Previous Year": 1105604.24
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700015",
+      "GL Description": "Rounding Adjustment",
+      "Current Year": 14450,
+      "Previous Year": -547.42
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700016",
+      "GL Description": "Interest On TDS",
+      "Current Year": 10247,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700017",
+      "GL Description": "GST Expense",
+      "Current Year": 32418.07,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700018",
+      "GL Description": "EHS Expense",
+      "Current Year": 18610295.1,
+      "Previous Year": 512193
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700020",
+      "GL Description": "Selling and Distribution Expenses",
+      "Current Year": 16342675.43,
+      "Previous Year": 5000
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700021",
+      "GL Description": "Freight Outward",
+      "Current Year": 3339814.85,
+      "Previous Year": 330709.64
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700022",
+      "GL Description": "Consumable Items",
+      "Current Year": 28786520.19,
+      "Previous Year": 2022522.17
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700023",
+      "GL Description": "Security Charges",
+      "Current Year": 6139382.18,
+      "Previous Year": 1201187.3
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700024",
+      "GL Description": "Printing and Stationery",
+      "Current Year": 1956057.98,
+      "Previous Year": 960
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700025",
+      "GL Description": "IT Expenses",
+      "Current Year": 7803035.78,
+      "Previous Year": 216090
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700027",
+      "GL Description": "Membership and Subscription",
+      "Current Year": 287277.02,
+      "Previous Year": 221276
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700028",
+      "GL Description": "Office Expenses",
+      "Current Year": 1884428.24,
+      "Previous Year": 240246.6
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700032",
+      "GL Description": "Other expenses",
+      "Current Year": 37226565.25,
+      "Previous Year": 651224.58
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700033",
+      "GL Description": "Commission Expense",
+      "Current Year": 3984742.67,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700035",
+      "GL Description": "Detention Charges",
+      "Current Year": 5490938.23,
+      "Previous Year": 27726.13
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700036",
+      "GL Description": "Ground Rent and Storage Charges",
+      "Current Year": 395700,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700037",
+      "GL Description": "Garden Expense",
+      "Current Year": 1080800,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700040",
+      "GL Description": "IND AS - Deferred Tax Expense",
+      "Current Year": -158826632.11,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700043",
+      "GL Description": "IND AS - Income tax on OCI",
+      "Current Year": -154440,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700045",
+      "GL Description": "Prior year Tax Short/Excess",
+      "Current Year": 0,
+      "Previous Year": 1
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700046",
+      "GL Description": "Allowances for Expected Credit Loss",
+      "Current Year": 1495028,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700047",
+      "GL Description": "Freight cost– Others",
+      "Current Year": 2320350,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "40700048",
+      "GL Description": "NMI provision and JW inventory write off",
+      "Current Year": 1301535,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "80000000",
+      "GL Description": "Clearing Material",
+      "Current Year": -9589348.2,
+      "Previous Year": -1435975.91
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "80000001",
+      "GL Description": "Clearing SFG and FG",
+      "Current Year": -569695,
+      "Previous Year": 0
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "80000002",
+      "GL Description": "Cntrl Stores& Spares",
+      "Current Year": -1339733.64,
+      "Previous Year": -1266811.1
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "80000008",
+      "GL Description": "Clearing Services",
+      "Current Year": -2897539.65,
+      "Previous Year": -4175105.67
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "L1002",
+      "GL Description": "Initial upload Vendor",
+      "Current Year": 227800,
+      "Previous Year": 227800
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "L1003",
+      "GL Description": "Initial upload Asset",
+      "Current Year": -164579766,
+      "Previous Year": -164579766
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "L1004",
+      "GL Description": "Initial upload GL",
+      "Current Year": 164351966,
+      "Previous Year": 164351966
+    },
+    {
+      "Financial Statement Item": "1",
+      "GL Number": "Not Assigned",
+      "GL Description": "Not Assigned",
+      "Current Year": 0,
+      "Previous Year": 0
+    }
+  ]
+}

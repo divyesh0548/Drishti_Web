@@ -1,0 +1,1011 @@
+{
+  "sourceWorkbook": "Master Grouping File.xlsx",
+  "generatedAt": "2026-07-24T09:49:30.046Z",
+  "optionCount": 26,
+  "options": [
+    {
+      "key": "borrowings",
+      "label": "Borrowings",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "cash-cash-equivalents",
+      "label": "Cash & Cash Equivalents",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "changes-in-inventories-of-finished-goods-and-work-in-progress",
+      "label": "Changes in inventories of finished goods and work-in-progress",
+      "statementArea": "profit-and-loss"
+    },
+    {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed",
+      "statementArea": "profit-and-loss"
+    },
+    {
+      "key": "current-income-tax",
+      "label": "Current income tax",
+      "statementArea": "profit-and-loss"
+    },
+    {
+      "key": "deferred-tax-liabilities-net",
+      "label": "Deferred Tax Liabilities (Net)",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "depreciation-and-amortisation-expense",
+      "label": "Depreciation and Amortisation Expense",
+      "statementArea": "profit-and-loss"
+    },
+    {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense",
+      "statementArea": "profit-and-loss"
+    },
+    {
+      "key": "equity-share-capital",
+      "label": "Equity share capital",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "finance-costs",
+      "label": "Finance costs",
+      "statementArea": "profit-and-loss"
+    },
+    {
+      "key": "inventories",
+      "label": "Inventories",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "non-current-assets",
+      "label": "Non Current Assets",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "other-current-assets",
+      "label": "Other Current Assets",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "other-equity",
+      "label": "Other equity",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "other-expenses",
+      "label": "Other expenses",
+      "statementArea": "profit-and-loss"
+    },
+    {
+      "key": "other-financial-assets",
+      "label": "Other financial assets",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "other-financial-liabilities",
+      "label": "Other financial liabilities",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "other-income",
+      "label": "Other Income",
+      "statementArea": "profit-and-loss"
+    },
+    {
+      "key": "other-tax-assets-net",
+      "label": "Other Tax Assets (Net)",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "provisions",
+      "label": "Provisions",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "revenue-from-operations",
+      "label": "Revenue from operations",
+      "statementArea": "profit-and-loss"
+    },
+    {
+      "key": "tax-expense",
+      "label": "Tax Expense",
+      "statementArea": "profit-and-loss"
+    },
+    {
+      "key": "trade-payables",
+      "label": "Trade Payables",
+      "statementArea": "balance-sheet"
+    },
+    {
+      "key": "trade-receivables",
+      "label": "Trade Receivables",
+      "statementArea": "balance-sheet"
+    }
+  ],
+  "lookup": {
+    "10000000": {
+      "key": "equity-share-capital",
+      "label": "Equity share capital"
+    },
+    "10000001": {
+      "key": "equity-share-capital",
+      "label": "Equity share capital"
+    },
+    "10000004": {
+      "key": "other-equity",
+      "label": "Other equity"
+    },
+    "10100000": {
+      "key": "other-equity",
+      "label": "Other equity"
+    },
+    "10100001": {
+      "key": "other-equity",
+      "label": "Other equity"
+    },
+    "10100002": {
+      "key": "other-equity",
+      "label": "Other equity"
+    },
+    "10100009": {
+      "key": "other-equity",
+      "label": "Other equity"
+    },
+    "10200015": {
+      "key": "borrowings",
+      "label": "Borrowings"
+    },
+    "10200016": {
+      "key": "borrowings",
+      "label": "Borrowings"
+    },
+    "10200018": {
+      "key": "borrowings",
+      "label": "Borrowings"
+    },
+    "10300002": {
+      "key": "borrowings",
+      "label": "Borrowings"
+    },
+    "10400001": {
+      "key": "deferred-tax-liabilities-net",
+      "label": "Deferred Tax Liabilities (Net)"
+    },
+    "10500000": {
+      "key": "provisions",
+      "label": "Provisions"
+    },
+    "10500001": {
+      "key": "provisions",
+      "label": "Provisions"
+    },
+    "10600010": {
+      "key": "borrowings",
+      "label": "Borrowings"
+    },
+    "10600014": {
+      "key": "borrowings",
+      "label": "Borrowings"
+    },
+    "10800000": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "10800001": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "10800002": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "10800003": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "10800004": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "10800005": {
+      "key": "other-financial-liabilities",
+      "label": "Other financial liabilities"
+    },
+    "10800007": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "10900000": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "10900003": {
+      "key": "other-financial-liabilities",
+      "label": "Other financial liabilities"
+    },
+    "10900012": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "10900013": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "10900015": {
+      "key": "other-tax-assets-net",
+      "label": "Other Tax Assets (Net)"
+    },
+    "10900016": {
+      "key": "other-financial-liabilities",
+      "label": "Other financial liabilities"
+    },
+    "10900017": {
+      "key": "other-financial-liabilities",
+      "label": "Other financial liabilities"
+    },
+    "10900018": {
+      "key": "other-financial-liabilities",
+      "label": "Other financial liabilities"
+    },
+    "11000001": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "11000002": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "11000003": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "11000005": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "11000006": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "11000007": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "11000009": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "11000011": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "11000012": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "11100000": {
+      "key": "borrowings",
+      "label": "Borrowings"
+    },
+    "11100002": {
+      "key": "other-financial-liabilities",
+      "label": "Other financial liabilities"
+    },
+    "20000000": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000001": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000002": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000003": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000004": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000005": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000006": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000007": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000008": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000009": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000010": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000011": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000012": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000015": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000016": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000017": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20000018": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20100000": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20100001": {
+      "key": "non-current-assets",
+      "label": "Non Current Assets"
+    },
+    "20100002": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20100003": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20100004": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "20300000": {
+      "key": "other-financial-assets",
+      "label": "Other financial assets"
+    },
+    "20300004": {
+      "key": "other-financial-assets",
+      "label": "Other financial assets"
+    },
+    "20400001": {
+      "key": "deferred-tax-liabilities-net",
+      "label": "Deferred Tax Liabilities (Net)"
+    },
+    "20500000": {
+      "key": "inventories",
+      "label": "Inventories"
+    },
+    "20500001": {
+      "key": "inventories",
+      "label": "Inventories"
+    },
+    "20500002": {
+      "key": "inventories",
+      "label": "Inventories"
+    },
+    "20500003": {
+      "key": "inventories",
+      "label": "Inventories"
+    },
+    "20500004": {
+      "key": "inventories",
+      "label": "Inventories"
+    },
+    "20500005": {
+      "key": "inventories",
+      "label": "Inventories"
+    },
+    "20500006": {
+      "key": "inventories",
+      "label": "Inventories"
+    },
+    "20500008": {
+      "key": "inventories",
+      "label": "Inventories"
+    },
+    "20600000": {
+      "key": "trade-receivables",
+      "label": "Trade Receivables"
+    },
+    "20600001": {
+      "key": "trade-receivables",
+      "label": "Trade Receivables"
+    },
+    "20600002": {
+      "key": "trade-receivables",
+      "label": "Trade Receivables"
+    },
+    "20600004": {
+      "key": "trade-receivables",
+      "label": "Trade Receivables"
+    },
+    "20600006": {
+      "key": "trade-receivables",
+      "label": "Trade Receivables"
+    },
+    "20600007": {
+      "key": "trade-receivables",
+      "label": "Trade Receivables"
+    },
+    "20600009": {
+      "key": "trade-receivables",
+      "label": "Trade Receivables"
+    },
+    "20800110": {
+      "key": "borrowings",
+      "label": "Borrowings"
+    },
+    "20800111": {
+      "key": "borrowings",
+      "label": "Borrowings"
+    },
+    "20800112": {
+      "key": "borrowings",
+      "label": "Borrowings"
+    },
+    "20800121": {
+      "key": "cash-cash-equivalents",
+      "label": "Cash & Cash Equivalents"
+    },
+    "20800122": {
+      "key": "cash-cash-equivalents",
+      "label": "Cash & Cash Equivalents"
+    },
+    "20800152": {
+      "key": "borrowings",
+      "label": "Borrowings"
+    },
+    "20900003": {
+      "key": "other-financial-assets",
+      "label": "Other financial assets"
+    },
+    "21000003": {
+      "key": "other-tax-assets-net",
+      "label": "Other Tax Assets (Net)"
+    },
+    "21000004": {
+      "key": "other-tax-assets-net",
+      "label": "Other Tax Assets (Net)"
+    },
+    "21000007": {
+      "key": "other-current-assets",
+      "label": "Other Current Assets"
+    },
+    "21000008": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "21000009": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "21000010": {
+      "key": "other-current-liabilities",
+      "label": "Other Current Liabilities"
+    },
+    "21000011": {
+      "key": "other-current-assets",
+      "label": "Other Current Assets"
+    },
+    "21000012": {
+      "key": "other-current-assets",
+      "label": "Other Current Assets"
+    },
+    "21000013": {
+      "key": "other-current-assets",
+      "label": "Other Current Assets"
+    },
+    "21000016": {
+      "key": "other-tax-assets-net",
+      "label": "Other Tax Assets (Net)"
+    },
+    "21000018": {
+      "key": "other-current-assets",
+      "label": "Other Current Assets"
+    },
+    "21100003": {
+      "key": "other-financial-assets",
+      "label": "Other financial assets"
+    },
+    "21100004": {
+      "key": "other-current-assets",
+      "label": "Other Current Assets"
+    },
+    "21100008": {
+      "key": "other-current-assets",
+      "label": "Other Current Assets"
+    },
+    "21100011": {
+      "key": "other-current-assets",
+      "label": "Other Current Assets"
+    },
+    "21100014": {
+      "key": "other-financial-assets",
+      "label": "Other financial assets"
+    },
+    "30000000": {
+      "key": "revenue-from-operations",
+      "label": "Revenue from operations"
+    },
+    "30000001": {
+      "key": "revenue-from-operations",
+      "label": "Revenue from operations"
+    },
+    "30000004": {
+      "key": "revenue-from-operations",
+      "label": "Revenue from operations"
+    },
+    "30000007": {
+      "key": "revenue-from-operations",
+      "label": "Revenue from operations"
+    },
+    "30000008": {
+      "key": "revenue-from-operations",
+      "label": "Revenue from operations"
+    },
+    "30000009": {
+      "key": "revenue-from-operations",
+      "label": "Revenue from operations"
+    },
+    "30100000": {
+      "key": "other-income",
+      "label": "Other Income"
+    },
+    "30100001": {
+      "key": "other-income",
+      "label": "Other Income"
+    },
+    "30100003": {
+      "key": "other-income",
+      "label": "Other Income"
+    },
+    "30100004": {
+      "key": "other-income",
+      "label": "Other Income"
+    },
+    "30100005": {
+      "key": "other-income",
+      "label": "Other Income"
+    },
+    "30100008": {
+      "key": "other-income",
+      "label": "Other Income"
+    },
+    "30100013": {
+      "key": "other-income",
+      "label": "Other Income"
+    },
+    "30100015": {
+      "key": "other-income",
+      "label": "Other Income"
+    },
+    "40100000": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40100001": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40100002": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40100005": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40100006": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40100007": {
+      "key": "changes-in-inventories-of-finished-goods-and-work-in-progress",
+      "label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    "40100008": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40100009": {
+      "key": "changes-in-inventories-of-finished-goods-and-work-in-progress",
+      "label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    "40100011": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40100012": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40100014": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40200000": {
+      "key": "changes-in-inventories-of-finished-goods-and-work-in-progress",
+      "label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    "40200001": {
+      "key": "changes-in-inventories-of-finished-goods-and-work-in-progress",
+      "label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    "40200003": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40200004": {
+      "key": "changes-in-inventories-of-finished-goods-and-work-in-progress",
+      "label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    "40200006": {
+      "key": "changes-in-inventories-of-finished-goods-and-work-in-progress",
+      "label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    "40200010": {
+      "key": "changes-in-inventories-of-finished-goods-and-work-in-progress",
+      "label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    "40200011": {
+      "key": "changes-in-inventories-of-finished-goods-and-work-in-progress",
+      "label": "Changes in inventories of finished goods and work-in-progress"
+    },
+    "40300000": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300001": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300002": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300003": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300004": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300005": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300006": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300008": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300010": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300011": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300012": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300013": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300015": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300016": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300017": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300018": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300019": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300020": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40300024": {
+      "key": "employee-benefits-expense",
+      "label": "Employee benefits expense"
+    },
+    "40400000": {
+      "key": "finance-costs",
+      "label": "Finance costs"
+    },
+    "40400001": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40400004": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40400005": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40400008": {
+      "key": "finance-costs",
+      "label": "Finance costs"
+    },
+    "40400009": {
+      "key": "finance-costs",
+      "label": "Finance costs"
+    },
+    "40400014": {
+      "key": "finance-costs",
+      "label": "Finance costs"
+    },
+    "40400019": {
+      "key": "finance-costs",
+      "label": "Finance costs"
+    },
+    "40400024": {
+      "key": "finance-costs",
+      "label": "Finance costs"
+    },
+    "40500000": {
+      "key": "depreciation-and-amortisation-expense",
+      "label": "Depreciation and Amortisation Expense"
+    },
+    "40500001": {
+      "key": "depreciation-and-amortisation-expense",
+      "label": "Depreciation and Amortisation Expense"
+    },
+    "40500002": {
+      "key": "depreciation-and-amortisation-expense",
+      "label": "Depreciation and Amortisation Expense"
+    },
+    "40500003": {
+      "key": "depreciation-and-amortisation-expense",
+      "label": "Depreciation and Amortisation Expense"
+    },
+    "40500004": {
+      "key": "depreciation-and-amortisation-expense",
+      "label": "Depreciation and Amortisation Expense"
+    },
+    "40500005": {
+      "key": "depreciation-and-amortisation-expense",
+      "label": "Depreciation and Amortisation Expense"
+    },
+    "40500007": {
+      "key": "depreciation-and-amortisation-expense",
+      "label": "Depreciation and Amortisation Expense"
+    },
+    "40500008": {
+      "key": "depreciation-and-amortisation-expense",
+      "label": "Depreciation and Amortisation Expense"
+    },
+    "40600000": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40600002": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40600003": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40600004": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40600005": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40600006": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40600007": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40600008": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700000": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700001": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700003": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700004": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700006": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700007": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700008": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700009": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700010": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700011": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700014": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700015": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700016": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700018": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700020": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700021": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700022": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700023": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700024": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700025": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700027": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700028": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700032": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700034": {
+      "key": "property-plant-and-equipment",
+      "label": "Property, Plant and Equipment"
+    },
+    "40700035": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40700036": {
+      "key": "cost-of-material-consumed",
+      "label": "Cost of material consumed"
+    },
+    "40700040": {
+      "key": "other-expenses",
+      "label": "Other expenses"
+    },
+    "40700041": {
+      "key": "tax-expense",
+      "label": "Tax Expense"
+    },
+    "40700045": {
+      "key": "current-income-tax",
+      "label": "Current income tax"
+    },
+    "80000000": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "80000001": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "80000002": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "80000003": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "80000006": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "80000008": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "80000009": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    },
+    "80000022": {
+      "key": "trade-payables",
+      "label": "Trade Payables"
+    }
+  }
+}

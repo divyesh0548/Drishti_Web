@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+!env.example
+
+# Local runtime workspace data
+data/companies/
+data/portal.db
+data/portal.db-*
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+portal-*.log
+drishti-*.log
+
+# TypeScript / tooling
+*.tsbuildinfo
+coverage/
+.eslintcache
+.turbo/
+
+# Testing & local dumps
+import-center-response.html
+ltel-export-test.xlsx
+
+# Working notes (optional local)
+Prompts.txt
+Tasks.txt
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Vercel / deploy
+.vercel
+
+# Debug / misc
+*.pem
+.cache/

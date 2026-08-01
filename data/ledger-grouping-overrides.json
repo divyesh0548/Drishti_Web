@@ -1,0 +1,65 @@
+{
+  "updatedAt": "2026-07-24T10:50:59.056Z",
+  "overrides": {
+    "10000000": {
+      "glNumber": "10000000",
+      "glDescription": "Equity Share Capital",
+      "groupKey": "equity-share-capital",
+      "label": "Equity share capital",
+      "accountClass": "equity-liability",
+      "bucket": "equity",
+      "notes": "",
+      "updatedAt": "2026-07-24T10:22:34.141Z"
+    },
+    "10000004": {
+      "glNumber": "10000004",
+      "glDescription": "0.01% Non-Cumulative CCPS",
+      "groupKey": "equity-share-capital",
+      "label": "Equity share capital",
+      "accountClass": "equity-liability",
+      "bucket": "equity",
+      "notes": "",
+      "updatedAt": "2026-07-24T10:50:59.056Z"
+    },
+    "10100000": {
+      "glNumber": "10100000",
+      "glDescription": "Security Premium Account",
+      "groupKey": "other-equity",
+      "label": "Other equity",
+      "accountClass": "equity-liability",
+      "bucket": "equity",
+      "notes": "",
+      "updatedAt": "2026-07-24T10:22:39.261Z"
+    },
+    "10100001": {
+      "glNumber": "10100001",
+      "glDescription": "Retained earnings",
+      "groupKey": "other-equity",
+      "label": "Other equity",
+      "accountClass": "equity-liability",
+      "bucket": "equity",
+      "notes": "",
+      "updatedAt": "2026-07-24T10:22:40.804Z"
+    },
+    "10100002": {
+      "glNumber": "10100002",
+      "glDescription": "Profit & Loss Account",
+      "groupKey": "other-equity",
+      "label": "Other equity",
+      "accountClass": "equity-liability",
+      "bucket": "equity",
+      "notes": "",
+      "updatedAt": "2026-07-24T10:22:41.999Z"
+    },
+    "10100009": {
+      "glNumber": "10100009",
+      "glDescription": "IND AS - Opening Balance - Retained Earnings",
+      "groupKey": "other-equity",
+      "label": "Other equity",
+      "accountClass": "equity-liability",
+      "bucket": "equity",
+      "notes": "",
+      "updatedAt": "2026-07-24T10:22:43.435Z"
+    }
+  }
+}

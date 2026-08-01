@@ -1,0 +1,110 @@
+import {
+  deleteLedgerGroupingOverride,
+  getLedgerGroupingOptions,
+  getLedgerGroupingOverrideList,
+  getLedgerSubgroupOptions,
+  saveLedgerGroupingOverride,
+} from "@/lib/ledger-groupings";
+import { requireRequestWorkspaceContext } from "@/lib/auth";
+import { NextResponse } from "next/server";
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const context = requireRequestWorkspaceContext(request, {
+    companyId: searchParams.get("companyId") ?? undefined,
+    versionId: searchParams.get("versionId") ?? undefined,
+  });
+
+  if (!context) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
+  return NextResponse.json({
+    options: getLedgerGroupingOptions({ companyId: context.company.id, versionId: context.currentVersion.id }),
+    subgroupOptions: getLedgerSubgroupOptions({ companyId: context.company.id, versionId: context.currentVersion.id }),
+    overrides: getLedgerGroupingOverrideList({ companyId: context.company.id, versionId: context.currentVersion.id }),
+  });
+}
+
+export async function POST(request: Request) {
+  const body = (await request.json()) as {
+    companyId?: string;
+    versionId?: string;
+    glNumber?: string;
+    glDescription?: string;
+    groupKey?: string;
+    subgroupKey?: string;
+    notes?: string;
+  };
+
+  if (!body.glNumber || !body.glDescription || !body.groupKey) {
+    return NextResponse.json({ error: "glNumber, glDescription, and groupKey are required." }, { status: 400 });
+  }
+
+  try {
+    const context = requireRequestWorkspaceContext(request, {
+      companyId: body.companyId,
+      versionId: body.versionId,
+    });
+
+    if (!context) {
+      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    }
+
+    if (!context.permissions.canManageGrouping) {
+      return NextResponse.json({ error: "You do not have permission to change ledger grouping." }, { status: 403 });
+    }
+
+    const override = saveLedgerGroupingOverride({
+      glNumber: body.glNumber,
+      glDescription: body.glDescription,
+      groupKey: body.groupKey,
+      subgroupKey: body.subgroupKey,
+      notes: body.notes,
+    }, {
+      companyId: context.company.id,
+      versionId: context.currentVersion.id,
+    });
+
+    return NextResponse.json({ override });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Unable to save grouping override.",
+      },
+      { status: 400 },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const body = (await request.json()) as {
+    companyId?: string;
+    versionId?: string;
+    glNumber?: string;
+  };
+
+  if (!body.glNumber) {
+    return NextResponse.json({ error: "glNumber is required." }, { status: 400 });
+  }
+
+  const context = requireRequestWorkspaceContext(request, {
+    companyId: body.companyId,
+    versionId: body.versionId,
+  });
+
+  if (!context) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
+  if (!context.permissions.canManageGrouping) {
+    return NextResponse.json({ error: "You do not have permission to change ledger grouping." }, { status: 403 });
+  }
+
+  return NextResponse.json({
+    deleted: deleteLedgerGroupingOverride(body.glNumber, {
+      companyId: context.company.id,
+      versionId: context.currentVersion.id,
+    }),
+  });
+}

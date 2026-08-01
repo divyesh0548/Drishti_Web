@@ -1,0 +1,83 @@
+import { MetricTile, SectionCard, StatusPill } from "@/components/portal/cards";
+import { assertRouteAccess } from "@/lib/navigation";
+import { resolveWorkspaceContextFromSearchParams } from "@/lib/portal-context";
+import { getTrialBalanceSnapshot } from "@/lib/trial-balance";
+import { formatCurrency } from "@/lib/utils";
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const context = await resolveWorkspaceContextFromSearchParams(searchParams ? await searchParams : undefined);
+  assertRouteAccess(context.currentUser.role, "/dashboard");
+  const snapshot = getTrialBalanceSnapshot({
+    companyId: context.company.id,
+    versionId: context.currentVersion.id,
+  });
+  const visibleDashboardMetrics = snapshot.dashboardMetrics.filter(
+    (metric) => !["Total assets", "Revenue from operations", "Profit after tax"].includes(metric.label),
+  );
+  return (
+    <div className="space-y-6">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        {visibleDashboardMetrics.map((metric) => (
+          <MetricTile key={metric.label} metric={metric} />
+        ))}
+      </section>
+
+      <section>
+        <SectionCard title="Review queue" eyebrow="Flags and current focus">
+          <div className="space-y-4">
+            <div className="rounded-[1.4rem] border border-slate-200/70 bg-slate-50/80 px-5 py-4 dark:border-white/10 dark:bg-slate-900/60">
+              <p className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+                {new Intl.DateTimeFormat("en-IN", { dateStyle: "full" }).format(new Date("2026-07-29"))}
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Role-aware workspace context for {context.currentUser.role}</p>
+            </div>
+
+            {snapshot.reviewFlags.map((flag) => (
+              <div key={flag.title} className="rounded-[1.4rem] border border-slate-200/70 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-950/60">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-slate-950 dark:text-slate-50">{flag.title}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{flag.detail}</p>
+                  </div>
+                  <StatusPill
+                    label={flag.tone === "critical" ? "Critical" : flag.tone === "warning" ? "Review" : "Stable"}
+                    tone={flag.tone}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      </section>
+
+      <section>
+        <SectionCard title="Balance sheet snapshot" eyebrow="Draft statement lines">
+          <div className="enterprise-table">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Line item</th>
+                  <th className="px-4 py-3 font-semibold">Current year</th>
+                  <th className="px-4 py-3 font-semibold">Previous year</th>
+                </tr>
+              </thead>
+              <tbody>
+                {snapshot.balanceSheet.assets.map((line) => (
+                  <tr key={line.label} className="border-t border-slate-200/70 dark:border-white/10">
+                    <td className="px-4 py-3 font-medium text-slate-950 dark:text-slate-50">{line.label}</td>
+                    <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{formatCurrency(line.current)}</td>
+                    <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{formatCurrency(line.previous)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </SectionCard>
+      </section>
+    </div>
+  );
+}
