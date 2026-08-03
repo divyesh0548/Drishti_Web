@@ -77,9 +77,9 @@ export default async function FixedAssetsPage({
         <MiniStat label="Near End of Useful Life" value={String(nearingEndOfLifeCount)} accent="indigo" />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+      <section className="grid gap-6 xl:grid-cols-2 xl:items-start">
         <SectionCard title="Module objectives" eyebrow="Standalone product value">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid items-start gap-4 md:grid-cols-2">
             {[
               "Maintain a centralized fixed asset register with cloud-based control.",
               "Track the full asset lifecycle from acquisition to disposal.",
@@ -122,9 +122,9 @@ export default async function FixedAssetsPage({
         </SectionCard>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      <section className="grid gap-6 xl:grid-cols-2 xl:items-start">
         <SectionCard title="Lifecycle coverage" eyebrow="Asset register, movements, disposal, and compliance">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid items-start gap-4 md:grid-cols-2">
             {[
               "Asset register fields: code, name, category, tag, vendor, location, department, cost center, capitalization date, residual value, useful life, and status.",
               "Movement tracking: acquisitions, capitalization, transfer, impairment, sale, disposal, scrapping, revaluation, subsidy, and partial disposal.",
@@ -176,9 +176,9 @@ export default async function FixedAssetsPage({
         />
       </SectionCard>
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+      <section className="grid gap-6 xl:grid-cols-2 xl:items-start">
         <SectionCard title="Professional reports" eyebrow="Standalone FAR outputs">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid items-start gap-4 md:grid-cols-2">
             {[
               "Fixed Asset Register",
               "Asset Movement Register",

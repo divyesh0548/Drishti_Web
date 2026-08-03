@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { StatusPill } from "@/components/portal/cards";
+import { PortalButton } from "@/components/ui/portal-button";
 import { formatCurrency } from "@/lib/utils";
 import type { FixedAssetLine, FixedAssetStore } from "@/lib/fixed-assets";
 import { Bot, Calculator, FileSpreadsheet, GitCompareArrows, Link2, Package2, ShieldCheck } from "lucide-react";
@@ -52,7 +53,7 @@ function MovementTable({
         <p className="font-medium text-slate-950 dark:text-slate-50">{title}</p>
         <StatusPill label={`${lines.length} rows`} tone="positive" />
       </div>
-      <div className="overflow-x-auto">
+      <div className="portal-scrollbar overflow-x-auto p-3">
         <table className="min-w-[1120px] table-fixed text-left text-sm">
           <thead>
             <tr>
@@ -76,7 +77,7 @@ function MovementTable({
               <>
                 {lines.map((line) => (
                   <tr key={line.id} className="h-16 border-t border-slate-200/70 dark:border-white/10">
-                    <td className="h-16 px-4 py-0 align-middle">
+                    <td className="h-16 px-4 py-3 align-middle">
                       <p className="truncate font-medium text-slate-950 dark:text-slate-50" title={line.label}>{line.label}</p>
                       <p
                         className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400"
@@ -85,22 +86,22 @@ function MovementTable({
                         Ledger {line.ledgerAccounts.join(", ") || "-"} | Asset classes {line.assetClasses.join(", ") || "-"}
                       </p>
                     </td>
-                    <td className="h-16 whitespace-nowrap px-4 py-0 align-middle text-slate-700 dark:text-slate-200">{formatCurrency(line.openingGross)}</td>
-                    <td className="h-16 whitespace-nowrap px-4 py-0 align-middle text-slate-700 dark:text-slate-200">{formatCurrency(line.additions)}</td>
-                    <td className="h-16 whitespace-nowrap px-4 py-0 align-middle text-slate-700 dark:text-slate-200">{formatCurrency(line.deductions)}</td>
-                    <td className="h-16 whitespace-nowrap px-4 py-0 align-middle text-slate-700 dark:text-slate-200">{formatCurrency(line.closingGross)}</td>
-                    <td className="h-16 whitespace-nowrap px-4 py-0 align-middle text-slate-700 dark:text-slate-200">{formatCurrency(line.depCharge)}</td>
-                    <td className="h-16 whitespace-nowrap px-4 py-0 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(line.netCurrent)}</td>
+                    <td className="h-16 whitespace-nowrap px-4 py-3 align-middle text-slate-700 dark:text-slate-200">{formatCurrency(line.openingGross)}</td>
+                    <td className="h-16 whitespace-nowrap px-4 py-3 align-middle text-slate-700 dark:text-slate-200">{formatCurrency(line.additions)}</td>
+                    <td className="h-16 whitespace-nowrap px-4 py-3 align-middle text-slate-700 dark:text-slate-200">{formatCurrency(line.deductions)}</td>
+                    <td className="h-16 whitespace-nowrap px-4 py-3 align-middle text-slate-700 dark:text-slate-200">{formatCurrency(line.closingGross)}</td>
+                    <td className="h-16 whitespace-nowrap px-4 py-3 align-middle text-slate-700 dark:text-slate-200">{formatCurrency(line.depCharge)}</td>
+                    <td className="h-16 whitespace-nowrap px-4 py-3 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(line.netCurrent)}</td>
                   </tr>
                 ))}
                 <tr className="h-16 border-t border-slate-200/70 bg-slate-50/80 dark:border-white/10 dark:bg-slate-900/80">
-                  <td className="h-16 px-4 py-0 align-middle font-semibold text-slate-950 dark:text-slate-50">Total</td>
-                  <td className="h-16 whitespace-nowrap px-4 py-0 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.openingGross)}</td>
-                  <td className="h-16 whitespace-nowrap px-4 py-0 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.additions)}</td>
-                  <td className="h-16 whitespace-nowrap px-4 py-0 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.deductions)}</td>
-                  <td className="h-16 whitespace-nowrap px-4 py-0 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.closingGross)}</td>
-                  <td className="h-16 whitespace-nowrap px-4 py-0 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.depCharge)}</td>
-                  <td className="h-16 whitespace-nowrap px-4 py-0 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.netCurrent)}</td>
+                  <td className="h-16 px-4 py-3 align-middle font-semibold text-slate-950 dark:text-slate-50">Total</td>
+                  <td className="h-16 whitespace-nowrap px-4 py-3 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.openingGross)}</td>
+                  <td className="h-16 whitespace-nowrap px-4 py-3 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.additions)}</td>
+                  <td className="h-16 whitespace-nowrap px-4 py-3 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.deductions)}</td>
+                  <td className="h-16 whitespace-nowrap px-4 py-3 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.closingGross)}</td>
+                  <td className="h-16 whitespace-nowrap px-4 py-3 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.depCharge)}</td>
+                  <td className="h-16 whitespace-nowrap px-4 py-3 align-middle font-semibold text-slate-950 dark:text-slate-50">{formatCurrency(total.netCurrent)}</td>
                 </tr>
               </>
             )}
@@ -180,15 +181,16 @@ export function FixedAssetManager({
           { id: "reports", label: "Reports & Audit", icon: FileSpreadsheet },
           { id: "integration", label: "Integration Controls", icon: Link2 },
         ].map((tab) => (
-          <button
+          <PortalButton
             key={tab.id}
+            variant="tab"
+            active={activeTab === tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id as FixedAssetTab)}
-            className={activeTab === tab.id ? "portal-tab-button portal-tab-button-active inline-flex items-center gap-2 px-4 py-2 text-sm font-medium" : "portal-tab-button inline-flex items-center gap-2 px-4 py-2 text-sm font-medium"}
+            startIcon={<tab.icon className="h-4 w-4" />}
           >
-            <tab.icon className="h-4 w-4" />
             {tab.label}
-          </button>
+          </PortalButton>
         ))}
       </div>
 
@@ -197,7 +199,7 @@ export function FixedAssetManager({
 
       {activeTab === "register" ? (
         <div className="space-y-6">
-          <section className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+          <section className="grid gap-6 xl:grid-cols-2 xl:items-start">
             <div className="enterprise-shell-card p-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -231,14 +233,9 @@ export function FixedAssetManager({
                     />
                     <span className="truncate">{file?.name ?? "Choose fixed asset register"}</span>
                   </label>
-                  <button
-                    type="button"
-                    disabled={!canEdit || isPending}
-                    onClick={uploadRegister}
-                    className="portal-button-primary inline-flex h-10 items-center justify-center px-4 py-2 text-sm font-semibold disabled:opacity-60"
-                  >
+                  <PortalButton variant="primary" type="button" disabled={!canEdit || isPending} onClick={uploadRegister}>
                     {isPending ? "Uploading..." : "Upload FAR"}
-                  </button>
+                  </PortalButton>
                 </div>
               </div>
             </div>
@@ -270,7 +267,7 @@ export function FixedAssetManager({
       ) : null}
 
       {activeTab === "depreciation" ? (
-        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
           <div className="enterprise-shell-card p-5">
             <div className="flex items-center gap-2">
               <Calculator className="h-4.5 w-4.5 text-blue-600 dark:text-blue-300" />
@@ -317,7 +314,7 @@ export function FixedAssetManager({
       ) : null}
 
       {activeTab === "reports" ? (
-        <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
           <div className="enterprise-shell-card p-5">
             <div className="flex items-center gap-2">
               <FileSpreadsheet className="h-4.5 w-4.5 text-blue-600 dark:text-blue-300" />
@@ -366,7 +363,7 @@ export function FixedAssetManager({
       ) : null}
 
       {activeTab === "integration" ? (
-        <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
           <div className="enterprise-shell-card p-5">
             <div className="flex items-center gap-2">
               <Link2 className="h-4.5 w-4.5 text-blue-600 dark:text-blue-300" />

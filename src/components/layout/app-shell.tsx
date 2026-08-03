@@ -31,7 +31,7 @@ export function AppShell({
         />
         <div className="flex h-screen min-h-0 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="w-full px-3 lg:px-4" style={{ maxWidth: sidebarCollapsed ? "1772px" : "1560px" }}>
+            <div className="w-full px-4 lg:px-6" style={{ maxWidth: sidebarCollapsed ? "1932px" : "1720px" }}>
               <Topbar />
               <main className="pb-8 pt-5 lg:pb-10">{children}</main>
             </div>

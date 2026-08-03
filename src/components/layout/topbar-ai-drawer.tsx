@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import type { WorkspaceContextPayload } from "@/components/layout/topbar";
 import { Bot, SendHorizonal, Sparkles, X } from "lucide-react";
+import { PortalButton, PortalIconButton } from "@/components/ui/portal-button";
 import { cn } from "@/lib/utils";
 
 type ChatMessage = {
@@ -127,14 +128,36 @@ export function TopbarAiDrawer({ workspace = null }: { workspace?: WorkspaceCont
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full border border-blue-200 bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-[0_18px_40px_rgba(37,99,235,0.35)] transition hover:-translate-y-1 hover:shadow-[0_22px_48px_rgba(37,99,235,0.42)] md:bottom-6 md:right-6 dark:border-blue-400/20"
-        aria-label="Open Drishti AI chat"
-      >
-        <Bot className="h-5 w-5" />
-      </button>
+      {!open ? (
+        <PortalIconButton
+          onClick={() => setOpen(true)}
+          aria-label="Open Drishti AI chat"
+          sx={{
+            position: "fixed",
+            bottom: { xs: 20, md: 24 },
+            right: { xs: 20, md: 24 },
+            left: "auto",
+            zIndex: 50,
+            height: 56,
+            width: 56,
+            borderRadius: "9999px",
+            borderColor: "rgba(191,219,254,1)",
+            background: "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
+            color: "#fff",
+            boxShadow: "0 18px 40px rgba(37,99,235,0.35)",
+            transition: "transform 150ms ease, box-shadow 150ms ease",
+            "&:hover": {
+              background: "linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%)",
+              borderColor: "rgba(191,219,254,1)",
+              color: "#fff",
+              transform: "translateY(-4px)",
+              boxShadow: "0 22px 48px rgba(37,99,235,0.42)",
+            },
+          }}
+        >
+          <Bot className="h-5 w-5" />
+        </PortalIconButton>
+      ) : null}
 
       {open ? (
         <div className="fixed inset-0 z-40 bg-slate-950/30 backdrop-blur-sm">
@@ -152,13 +175,13 @@ export function TopbarAiDrawer({ workspace = null }: { workspace?: WorkspaceCont
                   Ask built-in workflow questions and get quick guidance from the portal assistant.
                 </p>
               </div>
-              <button
-                type="button"
+              <PortalIconButton
                 onClick={() => setOpen(false)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-slate-900 dark:text-slate-200"
+                aria-label="Close Drishti AI chat"
+                sx={{ height: 40, width: 40, flexShrink: 0 }}
               >
                 <X className="h-4 w-4" />
-              </button>
+              </PortalIconButton>
             </div>
 
             <div className="mt-6 flex-1 overflow-y-auto rounded-[1.4rem] border border-slate-200/70 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-slate-900/55">
@@ -201,14 +224,14 @@ export function TopbarAiDrawer({ workspace = null }: { workspace?: WorkspaceCont
               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Suggested questions</p>
               <div className="flex flex-wrap gap-2">
                 {suggestedQuestions.map((question) => (
-                  <button
+                  <PortalButton
                     key={question}
-                    type="button"
+                    variant="tab"
                     onClick={() => submitPrompt(question)}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-blue-200 hover:text-blue-700 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-blue-400/20 dark:hover:text-blue-300"
+                    sx={{ textTransform: "none", fontWeight: 400 }}
                   >
                     {question}
-                  </button>
+                  </PortalButton>
                 ))}
               </div>
             </div>
@@ -223,16 +246,33 @@ export function TopbarAiDrawer({ workspace = null }: { workspace?: WorkspaceCont
                       submitPrompt(draft);
                     }
                   }}
-                  className="field-input pr-12"
+                  className="field-input field-input-icon-right"
                   placeholder="Ask a predefined workflow question"
                 />
-                <button
-                  type="button"
+                <PortalIconButton
                   onClick={() => submitPrompt(draft)}
-                  className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl bg-blue-600 text-white transition hover:bg-blue-700"
+                  aria-label="Send message"
+                  sx={{
+                    position: "absolute",
+                    right: 8,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    zIndex: 2,
+                    height: 36,
+                    width: 36,
+                    borderRadius: "0.75rem",
+                    borderColor: "transparent",
+                    bgcolor: "primary.main",
+                    color: "#eff6ff",
+                    "&:hover": {
+                      bgcolor: "primary.dark",
+                      borderColor: "transparent",
+                      color: "#eff6ff",
+                    },
+                  }}
                 >
                   <SendHorizonal className="h-4 w-4" />
-                </button>
+                </PortalIconButton>
               </div>
             </div>
           </div>

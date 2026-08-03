@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { ArrowRight, BarChart3, KeyRound, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
+import { PortalButton } from "@/components/ui/portal-button";
 
 export function LoginForm() {
   const [isPending, startTransition] = useTransition();
@@ -158,17 +159,17 @@ export function LoginForm() {
               <label className="block">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Password</span>
-                  <button
-                    type="button"
+                  <PortalButton
+                    variant="text"
                     onClick={() => {
                       setMode("reset");
                       setError(null);
                       setMessage(null);
                     }}
-                    className="text-sm font-medium text-blue-700 dark:text-blue-300"
+                    sx={{ minWidth: 0, p: 0, fontSize: "0.875rem", fontWeight: 500, textTransform: "none" }}
                   >
                     Forgot Password
-                  </button>
+                  </PortalButton>
                 </div>
                 <input
                   className="field-input"
@@ -194,17 +195,17 @@ export function LoginForm() {
                     <p className="text-sm font-semibold text-slate-950 dark:text-slate-50">Reset password</p>
                     <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Set a new password for your workspace account.</p>
                   </div>
-                  <button
-                    type="button"
+                  <PortalButton
+                    variant="text"
                     onClick={() => {
                       setMode("login");
                       setError(null);
                       setMessage(null);
                     }}
-                    className="text-sm font-medium text-blue-700 dark:text-blue-300"
+                    sx={{ minWidth: 0, p: 0, fontSize: "0.875rem", fontWeight: 500, textTransform: "none", whiteSpace: "nowrap" }}
                   >
                     Back to sign in
-                  </button>
+                  </PortalButton>
                 </div>
 
                 <label className="block">
@@ -255,15 +256,16 @@ export function LoginForm() {
             {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/12 dark:text-rose-300">{error}</div> : null}
             {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/12 dark:text-emerald-300">{message}</div> : null}
 
-            <button
-              type="button"
+            <PortalButton
+              variant="primary"
+              fullWidth
               disabled={isPending || !email || (mode === "login" ? !password : !newPassword || !confirmPassword)}
               onClick={mode === "login" ? submit : submitPasswordReset}
-              className="portal-button-primary inline-flex w-full items-center justify-center gap-2 px-5 py-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+              endIcon={<ArrowRight className="h-4 w-4" />}
+              sx={{ borderRadius: "1rem", px: 2.5, py: 1.75, fontSize: "0.875rem", fontWeight: 600, textTransform: "none" }}
             >
               {isPending ? (mode === "login" ? "Signing in..." : "Updating password...") : mode === "login" ? "Sign in to Drishti" : "Reset password"}
-              <ArrowRight className="h-4 w-4" />
-            </button>
+            </PortalButton>
           </div>
         </div>
       </section>

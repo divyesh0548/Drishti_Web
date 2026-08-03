@@ -1,10 +1,12 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState, useTransition } from "react";
+import { useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 import { StatusPill } from "@/components/portal/cards";
+import { PortalButton } from "@/components/ui/portal-button";
+import { PortalSelect } from "@/components/ui/portal-select";
 import type { LedgerGroupingOption, LedgerGroupingOverride, LedgerSubgroupOption } from "@/lib/ledger-groupings";
 import type { LedgerRow } from "@/lib/trial-balance";
 import { formatCurrency } from "@/lib/utils";
@@ -17,6 +19,11 @@ type EditableState = {
 
 type MappingFilter = "all" | "mapped" | "unmapped";
 type PageSize = 10 | 15 | 20;
+
+type KeyedLedgerRow = {
+  draftKey: string;
+  row: LedgerRow;
+};
 
 function isMappedRow(row: LedgerRow) {
   return Boolean(row.groupingKey && row.noteNumber);
@@ -33,6 +40,27 @@ function matchesSearch(row: LedgerRow, filter: string) {
     row.derivedLabel.toLowerCase().includes(filter) ||
     row.subgroupLabel.toLowerCase().includes(filter) ||
     row.noteTitle.toLowerCase().includes(filter)
+  );
+}
+
+function buildDraftKey(row: LedgerRow, index: number) {
+  const glNumber = row.glNumber.trim();
+  return glNumber || `__blank__:${index}:${row.glDescription.trim().toLowerCase()}`;
+}
+
+function buildDraftState(
+  rows: LedgerRow[],
+  overrideMap: Record<string, LedgerGroupingOverride>,
+): Record<string, EditableState> {
+  return Object.fromEntries(
+    rows.map((row, index) => [
+      buildDraftKey(row, index),
+      {
+        groupKey: overrideMap[row.glNumber]?.groupKey ?? row.groupingKey ?? "",
+        subgroupKey: overrideMap[row.glNumber]?.subgroupKey ?? row.subgroupKey ?? "",
+        notes: overrideMap[row.glNumber]?.notes ?? row.groupingNotes ?? "",
+      },
+    ]),
   );
 }
 
@@ -63,29 +91,38 @@ export function GroupingManager({
   const [pageSize, setPageSize] = useState<PageSize>(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const overrideMap = Object.fromEntries(savedOverrides.map((override) => [override.glNumber, override]));
-  const subgroupOptionsByGroup = subgroupOptions.reduce<Record<string, LedgerSubgroupOption[]>>((accumulator, option) => {
-    accumulator[option.groupKey] = [...(accumulator[option.groupKey] ?? []), option];
-    return accumulator;
-  }, {});
-  const getFirstSubgroupKey = (groupKey: string) => subgroupOptionsByGroup[groupKey]?.[0]?.key ?? "";
-  const [drafts, setDrafts] = useState<Record<string, EditableState>>(() =>
-    Object.fromEntries(
-      rows.map((row) => [
-        row.glNumber,
-        {
-          groupKey: overrideMap[row.glNumber]?.groupKey ?? row.groupingKey ?? "",
-          subgroupKey: overrideMap[row.glNumber]?.subgroupKey ?? row.subgroupKey ?? "",
-          notes: overrideMap[row.glNumber]?.notes ?? row.groupingNotes ?? "",
-        },
-      ]),
-    ),
+  const overrideMap = useMemo(
+    () => Object.fromEntries(savedOverrides.map((override) => [override.glNumber, override])),
+    [savedOverrides],
   );
+  const subgroupOptionsByGroup = useMemo(
+    () =>
+      subgroupOptions.reduce<Record<string, LedgerSubgroupOption[]>>((accumulator, option) => {
+        accumulator[option.groupKey] = [...(accumulator[option.groupKey] ?? []), option];
+        return accumulator;
+      }, {}),
+    [subgroupOptions],
+  );
+  const getFirstSubgroupKey = (groupKey: string) => subgroupOptionsByGroup[groupKey]?.[0]?.key ?? "";
+  const keyedRows = useMemo<KeyedLedgerRow[]>(
+    () => rows.map((row, index) => ({ row, draftKey: buildDraftKey(row, index) })),
+    [rows],
+  );
+  const [drafts, setDrafts] = useState<Record<string, EditableState>>(() => buildDraftState(rows, overrideMap));
+
+  useEffect(() => {
+    setDrafts(buildDraftState(rows, overrideMap));
+    setCurrentPage(1);
+    setSearch("");
+    setMappingFilter("all");
+    setGroupFilter("all");
+    setSubgroupFilter("all");
+  }, [companyId, versionId, rows, overrideMap]);
 
   const filter = deferredSearch.trim().toLowerCase();
   const filterSubgroupOptions = groupFilter === "all" ? subgroupOptions : subgroupOptionsByGroup[groupFilter] ?? [];
-  const filteredRows = rows.filter((row) => {
-    const draft = drafts[row.glNumber];
+  const filteredRows = keyedRows.filter(({ row, draftKey }) => {
+    const draft = drafts[draftKey];
     const rowGroupKey = draft?.groupKey ?? row.groupingKey ?? "";
     const rowSubgroupKey = draft?.subgroupKey ?? row.subgroupKey ?? "";
 
@@ -118,8 +155,8 @@ export function GroupingManager({
     setCurrentPage((page) => Math.min(page, totalPages));
   }, [totalPages]);
 
-  const saveOverride = (row: LedgerRow) => {
-    const draft = drafts[row.glNumber];
+  const saveOverride = (row: LedgerRow, draftKey: string) => {
+    const draft = drafts[draftKey];
 
     startTransition(async () => {
       try {
@@ -144,7 +181,7 @@ export function GroupingManager({
           throw new Error(payload.error ?? "Unable to save ledger grouping.");
         }
 
-        toast.success(`Saved grouping for GL ${row.glNumber}.`);
+        toast.success(`Saved grouping for GL ${row.glNumber || row.glDescription}.`);
         router.refresh();
       } catch (saveError) {
         toast.error(saveError instanceof Error ? saveError.message : "Unable to save ledger grouping.");
@@ -152,9 +189,7 @@ export function GroupingManager({
     });
   };
 
-  const clearOverride = (glNumber: string) => {
-    const fallbackRow = rows.find((row) => row.glNumber === glNumber);
-
+  const clearOverride = (row: LedgerRow, draftKey: string) => {
     startTransition(async () => {
       try {
         const response = await fetch("/api/groupings", {
@@ -162,7 +197,7 @@ export function GroupingManager({
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ companyId, versionId, glNumber }),
+          body: JSON.stringify({ companyId, versionId, glNumber: row.glNumber }),
         });
 
         if (!response.ok) {
@@ -170,18 +205,16 @@ export function GroupingManager({
           throw new Error(payload.error ?? "Unable to clear ledger grouping.");
         }
 
-        if (fallbackRow) {
-          setDrafts((current) => ({
-            ...current,
-            [glNumber]: {
-              groupKey: fallbackRow.groupingKey ?? "",
-              subgroupKey: fallbackRow.subgroupKey ?? "",
-              notes: "",
-            },
-          }));
-        }
+        setDrafts((current) => ({
+          ...current,
+          [draftKey]: {
+            groupKey: row.groupingKey ?? "",
+            subgroupKey: row.subgroupKey ?? "",
+            notes: "",
+          },
+        }));
 
-        toast.success(`Removed saved grouping for GL ${glNumber}.`);
+        toast.success(`Removed saved grouping for GL ${row.glNumber || row.glDescription}.`);
         router.refresh();
       } catch (deleteError) {
         toast.error(deleteError instanceof Error ? deleteError.message : "Unable to clear ledger grouping.");
@@ -208,153 +241,145 @@ export function GroupingManager({
             className="field-input min-w-[260px]"
             placeholder="Search GL number, ledger, or grouping..."
           />
-          <select
+          <PortalSelect
             value={mappingFilter}
-            onChange={(event) => setMappingFilter(event.target.value as MappingFilter)}
-            className="field-input min-w-[170px] py-3"
-          >
-            <option value="all">All ledgers</option>
-            <option value="mapped">Mapped ledgers</option>
-            <option value="unmapped">Unmapped ledgers</option>
-          </select>
-          <select
+            onChange={(value) => setMappingFilter(value as MappingFilter)}
+            fullWidth={false}
+            formControlProps={{ sx: { minWidth: 170 } }}
+            options={[
+              { value: "all", label: "All ledgers" },
+              { value: "mapped", label: "Mapped ledgers" },
+              { value: "unmapped", label: "Unmapped ledgers" },
+            ]}
+          />
+          <PortalSelect
             value={groupFilter}
-            onChange={(event) => {
-              setGroupFilter(event.target.value);
+            onChange={(value) => {
+              setGroupFilter(value);
               setSubgroupFilter("all");
             }}
-            className="field-input min-w-[220px] py-3"
-          >
-            <option value="all">All groupings</option>
-            {options.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <select
+            fullWidth={false}
+            formControlProps={{ sx: { minWidth: 220 } }}
+            options={[
+              { value: "all", label: "All groupings" },
+              ...options.map((option) => ({ value: option.key, label: option.label })),
+            ]}
+          />
+          <PortalSelect
             value={subgroupFilter}
-            onChange={(event) => setSubgroupFilter(event.target.value)}
-            className="field-input min-w-[240px] py-3"
-          >
-            <option value="all">All subgroupings</option>
-            {filterSubgroupOptions.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setSubgroupFilter(value)}
+            fullWidth={false}
+            formControlProps={{ sx: { minWidth: 240 } }}
+            options={[
+              { value: "all", label: "All subgroupings" },
+              ...filterSubgroupOptions.map((option) => ({ value: option.key, label: option.label })),
+            ]}
+          />
         </div>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200/70 dark:border-white/10">
-        <div className="max-h-[68vh] overflow-auto">
-        <table className="min-w-[1960px] text-left text-sm">
-          <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600 shadow-[0_1px_0_var(--border)] dark:bg-slate-900 dark:text-slate-300">
-            <tr>
-              <th className="w-[130px] px-4 py-3 font-semibold">GL</th>
-              <th className="w-[300px] px-4 py-3 font-semibold">Ledger</th>
-              <th className="w-[170px] px-4 py-3 font-semibold">Current year</th>
-              <th className="w-[170px] px-4 py-3 font-semibold">Previous year</th>
-              <th className="w-[310px] px-4 py-3 font-semibold">Change grouping</th>
-              <th className="w-[310px] px-4 py-3 font-semibold">Change subgrouping</th>
-              <th className="w-[300px] px-4 py-3 font-semibold">Note impact</th>
-              <th className="w-[330px] min-w-[330px] px-4 py-3 font-semibold">Action</th>
-              <th className="w-[180px] min-w-[180px] px-4 py-3" aria-label="Save controls" />
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedRows.map((row) => {
-              const draft = drafts[row.glNumber];
-              const override = overrideMap[row.glNumber];
-              const availableSubgroups = subgroupOptionsByGroup[draft.groupKey] ?? [];
-              const selectedSubgroup =
-                availableSubgroups.find((option) => option.key === draft.subgroupKey) ?? availableSubgroups[0] ?? null;
-              const noteImpact = selectedSubgroup
-                ? `Note ${selectedSubgroup.noteNumber} - ${selectedSubgroup.noteTitle}`
-                : row.noteNumber
-                  ? `Note ${row.noteNumber} - ${row.noteTitle}`
-                  : "Review required";
+        <div className="portal-scrollbar max-h-[68vh] overflow-auto">
+          <table className="min-w-[1960px] border-separate border-spacing-0 text-left text-sm">
+            <thead className="sticky top-0 z-20">
+              <tr>
+                <th className="w-[130px] border-b border-slate-200/70 bg-slate-50 px-4 py-3 font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">GL</th>
+                <th className="w-[300px] border-b border-slate-200/70 bg-slate-50 px-4 py-3 font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">Ledger</th>
+                <th className="w-[170px] border-b border-slate-200/70 bg-slate-50 px-4 py-3 font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">Current year</th>
+                <th className="w-[170px] border-b border-slate-200/70 bg-slate-50 px-4 py-3 font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">Previous year</th>
+                <th className="w-[310px] border-b border-slate-200/70 bg-slate-50 px-4 py-3 font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">Change grouping</th>
+                <th className="w-[310px] border-b border-slate-200/70 bg-slate-50 px-4 py-3 font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">Change subgrouping</th>
+                <th className="w-[300px] border-b border-slate-200/70 bg-slate-50 px-4 py-3 font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">Note impact</th>
+                <th className="w-[330px] min-w-[330px] border-b border-slate-200/70 bg-slate-50 px-4 py-3 font-semibold text-slate-600 dark:border-white/10 dark:bg-slate-900 dark:text-slate-300">Action</th>
+                <th className="w-[180px] min-w-[180px] border-b border-slate-200/70 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-slate-900" aria-label="Save controls" />
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedRows.map(({ row, draftKey }) => {
+                const draft = drafts[draftKey] ?? {
+                  groupKey: "",
+                  subgroupKey: "",
+                  notes: "",
+                };
+                const override = overrideMap[row.glNumber];
+                const availableSubgroups = subgroupOptionsByGroup[draft.groupKey] ?? [];
+                const selectedSubgroup =
+                  availableSubgroups.find((option) => option.key === draft.subgroupKey) ?? availableSubgroups[0] ?? null;
+                const noteImpact = selectedSubgroup
+                  ? `Note ${selectedSubgroup.noteNumber} - ${selectedSubgroup.noteTitle}`
+                  : row.noteNumber
+                    ? `Note ${row.noteNumber} - ${row.noteTitle}`
+                    : "Review required";
 
-              return (
-                <tr key={row.glNumber} className="border-t border-slate-200/70 align-top dark:border-white/10">
-                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{row.glNumber}</td>
-                  <td className="px-4 py-3">
-                    <p className="font-medium">{row.glDescription}</p>
-                    <div className="mt-2 space-y-2">
-                      <StatusPill label={isMappedRow(row) ? "Mapped" : "Unmapped"} tone={isMappedRow(row) ? "positive" : "warning"} />
-                      <p className="text-xs font-medium text-slate-700 dark:text-slate-200">{row.derivedLabel}</p>
-                      {row.subgroupLabel ? <p className="text-xs text-slate-500 dark:text-slate-400">{row.subgroupLabel}</p> : null}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{formatCurrency(row.currentYear)}</td>
-                  <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{formatCurrency(row.previousYear)}</td>
-                  <td className="px-4 py-3">
-                    <select
-                      value={draft.groupKey}
-                      disabled={!canEdit}
-                      onChange={(event) =>
-                        setDrafts((current) => ({
-                          ...current,
-                          [row.glNumber]: {
-                            ...current[row.glNumber],
-                            groupKey: event.target.value,
-                            subgroupKey:
-                              subgroupOptionsByGroup[event.target.value]?.some((option) => option.key === current[row.glNumber]?.subgroupKey)
-                                ? current[row.glNumber].subgroupKey
-                                : getFirstSubgroupKey(event.target.value),
-                          },
-                        }))
-                      }
-                      className="field-input w-full py-3"
-                    >
-                      <option value="">Select grouping</option>
-                      {options.map((option) => (
-                        <option key={option.key} value={option.key}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-4 py-3">
-                    <select
-                      value={draft.subgroupKey}
-                      disabled={!canEdit || availableSubgroups.length === 0}
-                      onChange={(event) =>
-                        setDrafts((current) => ({
-                          ...current,
-                          [row.glNumber]: {
-                            ...current[row.glNumber],
-                            subgroupKey: event.target.value,
-                          },
-                        }))
-                      }
-                      className="field-input w-full py-3"
-                    >
-                      <option value="">Select subgrouping</option>
-                      {availableSubgroups.map((option) => (
-                        <option key={option.key} value={option.key}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200">
-                      <p>{noteImpact}</p>
-                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{row.classificationBasis}</p>
-                    </div>
-                  </td>
-                  <td className="min-w-[330px] px-4 py-3">
-                    <div>
+                return (
+                  <tr key={draftKey} className="align-top">
+                    <td className="border-t border-slate-200/70 px-4 py-3 text-slate-500 dark:border-white/10 dark:text-slate-400">{row.glNumber}</td>
+                    <td className="border-t border-slate-200/70 px-4 py-3 dark:border-white/10">
+                      <p className="font-medium">{row.glDescription}</p>
+                      <div className="mt-2 space-y-2">
+                        <StatusPill label={isMappedRow(row) ? "Mapped" : "Unmapped"} tone={isMappedRow(row) ? "positive" : "warning"} />
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-200">{row.derivedLabel}</p>
+                        {row.subgroupLabel ? <p className="text-xs text-slate-500 dark:text-slate-400">{row.subgroupLabel}</p> : null}
+                      </div>
+                    </td>
+                    <td className="border-t border-slate-200/70 px-4 py-3 text-slate-700 dark:border-white/10 dark:text-slate-200">{formatCurrency(row.currentYear)}</td>
+                    <td className="border-t border-slate-200/70 px-4 py-3 text-slate-700 dark:border-white/10 dark:text-slate-200">{formatCurrency(row.previousYear)}</td>
+                    <td className="border-t border-slate-200/70 px-4 py-3 dark:border-white/10">
+                      <PortalSelect
+                        value={draft.groupKey}
+                        disabled={!canEdit}
+                        onChange={(value) =>
+                          setDrafts((current) => ({
+                            ...current,
+                            [draftKey]: {
+                              ...current[draftKey],
+                              groupKey: value,
+                              subgroupKey: subgroupOptionsByGroup[value]?.some((option) => option.key === current[draftKey]?.subgroupKey)
+                                ? current[draftKey].subgroupKey
+                                : getFirstSubgroupKey(value),
+                            },
+                          }))
+                        }
+                        options={[
+                          { value: "", label: "Select grouping" },
+                          ...options.map((option) => ({ value: option.key, label: option.label })),
+                        ]}
+                      />
+                    </td>
+                    <td className="border-t border-slate-200/70 px-4 py-3 dark:border-white/10">
+                      <PortalSelect
+                        value={draft.subgroupKey}
+                        disabled={!canEdit || availableSubgroups.length === 0}
+                        onChange={(value) =>
+                          setDrafts((current) => ({
+                            ...current,
+                            [draftKey]: {
+                              ...current[draftKey],
+                              subgroupKey: value,
+                            },
+                          }))
+                        }
+                        options={[
+                          { value: "", label: "Select subgrouping" },
+                          ...availableSubgroups.map((option) => ({ value: option.key, label: option.label })),
+                        ]}
+                      />
+                    </td>
+                    <td className="border-t border-slate-200/70 px-4 py-3 dark:border-white/10">
+                      <div className="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-200">
+                        <p>{noteImpact}</p>
+                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{row.classificationBasis}</p>
+                      </div>
+                    </td>
+                    <td className="min-w-[330px] border-t border-slate-200/70 px-4 py-3 dark:border-white/10">
                       <textarea
                         value={draft.notes}
                         disabled={!canEdit}
                         onChange={(event) =>
                           setDrafts((current) => ({
                             ...current,
-                            [row.glNumber]: {
-                              ...current[row.glNumber],
+                            [draftKey]: {
+                              ...current[draftKey],
                               notes: event.target.value,
                             },
                           }))
@@ -363,73 +388,74 @@ export function GroupingManager({
                         className="field-input min-h-[84px] resize-y text-sm leading-5"
                         placeholder="Optional remarks..."
                       />
-                    </div>
-                  </td>
-                  <td className="min-w-[180px] px-4 py-3">
-                    <div className="flex flex-col gap-3">
-                      <button
-                        type="button"
-                        disabled={!canEdit || isPending || !draft.groupKey}
-                        onClick={() => saveOverride(row)}
-                        className="portal-button-primary inline-flex min-h-[44px] items-center justify-center px-4 py-2 text-sm font-semibold disabled:opacity-60"
-                      >
-                        Save
-                      </button>
-                      {override ? (
-                        <button
+                    </td>
+                    <td className="min-w-[180px] border-t border-slate-200/70 px-4 py-3 dark:border-white/10">
+                      <div className="flex flex-col gap-3">
+                        <PortalButton
+                          variant="primary"
                           type="button"
-                          disabled={!canEdit || isPending}
-                          onClick={() => clearOverride(row.glNumber)}
-                          className="portal-button-secondary inline-flex min-h-[42px] items-center justify-center px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                          disabled={!canEdit || isPending || !draft.groupKey}
+                          onClick={() => saveOverride(row, draftKey)}
                         >
-                          Clear saved
-                        </button>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                          Save
+                        </PortalButton>
+                        {override ? (
+                          <PortalButton
+                            variant="secondary"
+                            type="button"
+                            disabled={!canEdit || isPending}
+                            onClick={() => clearOverride(row, draftKey)}
+                          >
+                            Clear saved
+                          </PortalButton>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
         <div className="flex flex-col gap-3 border-t border-slate-200/70 bg-white/90 px-4 py-3 dark:border-white/10 dark:bg-slate-950/80 md:flex-row md:items-center md:justify-between">
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing {visibleStart}-{visibleEnd} of {filteredRows.length} ledgers
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
               Rows
-              <select
-                value={pageSize}
-                onChange={(event) => setPageSize(Number(event.target.value) as PageSize)}
-                className="field-input w-[92px] py-2 text-sm"
-              >
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-                <option value={20}>20</option>
-              </select>
-            </label>
+              <PortalSelect
+                value={String(pageSize)}
+                onChange={(value) => setPageSize(Number(value) as PageSize)}
+                fullWidth={false}
+                formControlProps={{ sx: { width: 92 } }}
+                options={[
+                  { value: "10", label: "10" },
+                  { value: "15", label: "15" },
+                  { value: "20", label: "20" },
+                ]}
+              />
+            </div>
             <div className="flex items-center gap-2">
-              <button
+              <PortalButton
+                variant="secondary"
                 type="button"
                 onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                 disabled={activePage === 1}
-                className="portal-button-secondary px-3 py-2 text-sm font-semibold disabled:opacity-50"
               >
                 Previous
-              </button>
+              </PortalButton>
               <span className="min-w-[84px] text-center text-sm font-medium text-slate-700 dark:text-slate-200">
                 {activePage} / {totalPages}
               </span>
-              <button
+              <PortalButton
+                variant="secondary"
                 type="button"
                 onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                 disabled={activePage === totalPages}
-                className="portal-button-secondary px-3 py-2 text-sm font-semibold disabled:opacity-50"
               >
                 Next
-              </button>
+              </PortalButton>
             </div>
           </div>
         </div>

@@ -3,7 +3,6 @@ import { VersionManager } from "@/components/portal/version-manager";
 import { assertRouteAccess } from "@/lib/navigation";
 import { resolveWorkspaceContextFromSearchParams } from "@/lib/portal-context";
 import { getTrialBalanceSnapshot } from "@/lib/trial-balance";
-import { Upload } from "lucide-react";
 
 export default async function ImportCenterPage({
   searchParams,
@@ -28,12 +27,6 @@ export default async function ImportCenterPage({
             <StatusPill label={`${context.versions.length} versions`} tone="positive" />
             <StatusPill label={`${snapshot.previewRows.length} preview rows`} tone="neutral" />
           </>
-        }
-        action={
-          <div className="portal-button-primary inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold">
-            <Upload className="h-4 w-4" />
-            Upload wizard active
-          </div>
         }
       />
 

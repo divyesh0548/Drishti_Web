@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { StatusPill } from "@/components/portal/cards";
+import { PortalButton } from "@/components/ui/portal-button";
+import { PortalSelect } from "@/components/ui/portal-select";
 import type { ConsolidationConfig, ConsolidationElimination } from "@/lib/consolidation";
 
 type CompanyOption = {
@@ -138,14 +140,15 @@ export function ConsolidationManager({
           { key: "scope", label: "Group Scope" },
           { key: "eliminations", label: "Intercompany Eliminations" },
         ].map((tab) => (
-          <button
+          <PortalButton
             key={tab.key}
+            variant="tab"
+            active={activeTab === tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key as "scope" | "eliminations")}
-            className={activeTab === tab.key ? "portal-tab-button portal-tab-button-active px-4 py-2 text-sm font-medium" : "portal-tab-button px-4 py-2 text-sm font-medium"}
           >
             {tab.label}
-          </button>
+          </PortalButton>
         ))}
       </div>
 
@@ -153,24 +156,24 @@ export function ConsolidationManager({
       {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
       {activeTab === "scope" ? (
-        <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-[1.5rem] border border-slate-200/70 bg-slate-50/80 p-5">
-            <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Parent company</p>
-            <p className="mt-3 text-lg font-semibold text-slate-950">{parentCompanyName}</p>
-            <p className="mt-1 text-sm text-slate-500">The selected workspace version is always included in consolidation.</p>
+        <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+          <div className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-900/60">
+            <p className="text-xs uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Parent company</p>
+            <p className="mt-3 text-lg font-semibold text-slate-950 dark:text-slate-50">{parentCompanyName}</p>
+            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">The selected workspace version is always included in consolidation.</p>
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200/70 bg-slate-50/80 p-5">
-            <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Group companies</p>
-            <div className="mt-4 space-y-3">
+          <div className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-900/60">
+            <p className="text-xs uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Group companies</p>
+            <div className="mt-4 space-y-4">
               {availableCompanies.map((company) => {
                 const selected = selectedMembers.includes(company.id);
 
                 return (
-                  <label key={company.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                  <label key={company.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-4 dark:border-white/10 dark:bg-slate-950/70">
                     <span>
-                      <span className="block font-medium text-slate-950">{company.name}</span>
-                      <span className="mt-1 block text-sm text-slate-500">Include this company in the consolidated financial statements.</span>
+                      <span className="block font-medium text-slate-950 dark:text-slate-50">{company.name}</span>
+                      <span className="mt-2 block text-sm text-slate-500 dark:text-slate-400">Include this company in the consolidated financial statements.</span>
                     </span>
                     <input
                       type="checkbox"
@@ -195,19 +198,19 @@ export function ConsolidationManager({
             <p className="text-sm text-slate-500">
               Configure optional elimination entries for intercompany balances, revenue, expenses, and other internal movements.
             </p>
-            <button
+            <PortalButton
+              variant="secondary"
               type="button"
               disabled={!canEdit}
               onClick={() => setEliminations((current) => [...current, createDraftElimination(parentCompanyId, firstMemberCompanyId)])}
-              className="portal-button-secondary px-4 py-2 text-sm font-medium disabled:opacity-60"
             >
               Add elimination
-            </button>
+            </PortalButton>
           </div>
 
-          <div className="overflow-auto rounded-2xl border border-slate-200/70">
+          <div className="portal-scrollbar overflow-auto rounded-xl border border-slate-200/70 p-3 dark:border-white/10">
             <table className="min-w-[1180px] text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500">
+              <thead className="bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                 <tr>
                   <th className="px-4 py-3 font-medium">From</th>
                   <th className="px-4 py-3 font-medium">To</th>
@@ -223,79 +226,72 @@ export function ConsolidationManager({
               </thead>
               <tbody>
                 {eliminations.map((entry) => (
-                  <tr key={entry.id} className="border-t border-slate-200/70 align-top">
+                  <tr key={entry.id} className="border-t border-slate-200/70 align-top dark:border-white/10">
                     <td className="px-4 py-3">
-                      <select
+                      <PortalSelect
                         value={entry.fromCompanyId}
                         disabled={!canEdit}
-                        onChange={(event) =>
+                        onChange={(value) =>
                           setEliminations((current) =>
-                            current.map((candidate) => (candidate.id === entry.id ? { ...candidate, fromCompanyId: event.target.value } : candidate)),
+                            current.map((candidate) => (candidate.id === entry.id ? { ...candidate, fromCompanyId: value } : candidate)),
                           )
                         }
-                        className="field-input min-w-[170px] py-3"
-                      >
-                        {includedCompanies.map((company) => (
-                          <option key={company.id} value={company.id}>
-                            {company.name}
-                          </option>
-                        ))}
-                      </select>
+                        fullWidth={false}
+                        formControlProps={{ sx: { minWidth: 170 } }}
+                        options={includedCompanies.map((company) => ({ value: company.id, label: company.name }))}
+                      />
                     </td>
                     <td className="px-4 py-3">
-                      <select
+                      <PortalSelect
                         value={entry.toCompanyId}
                         disabled={!canEdit}
-                        onChange={(event) =>
+                        onChange={(value) =>
                           setEliminations((current) =>
-                            current.map((candidate) => (candidate.id === entry.id ? { ...candidate, toCompanyId: event.target.value } : candidate)),
+                            current.map((candidate) => (candidate.id === entry.id ? { ...candidate, toCompanyId: value } : candidate)),
                           )
                         }
-                        className="field-input min-w-[170px] py-3"
-                      >
-                        {includedCompanies.map((company) => (
-                          <option key={company.id} value={company.id}>
-                            {company.name}
-                          </option>
-                        ))}
-                      </select>
+                        fullWidth={false}
+                        formControlProps={{ sx: { minWidth: 170 } }}
+                        options={includedCompanies.map((company) => ({ value: company.id, label: company.name }))}
+                      />
                     </td>
                     <td className="px-4 py-3">
-                      <select
+                      <PortalSelect
                         value={entry.noteNumber}
                         disabled={!canEdit}
-                        onChange={(event) =>
+                        onChange={(value) =>
                           setEliminations((current) =>
-                            current.map((candidate) => (candidate.id === entry.id ? { ...candidate, noteNumber: event.target.value } : candidate)),
+                            current.map((candidate) => (candidate.id === entry.id ? { ...candidate, noteNumber: value } : candidate)),
                           )
                         }
-                        className="field-input min-w-[220px] py-3"
-                      >
-                        {noteOptions.map(([noteNumber, title]) => (
-                          <option key={noteNumber} value={noteNumber}>
-                            {`Note ${noteNumber} - ${title}`}
-                          </option>
-                        ))}
-                      </select>
+                        fullWidth={false}
+                        formControlProps={{ sx: { minWidth: 220 } }}
+                        options={noteOptions.map(([noteNumber, title]) => ({
+                          value: noteNumber,
+                          label: `Note ${noteNumber} - ${title}`,
+                        }))}
+                      />
                     </td>
                     <td className="px-4 py-3">
-                      <select
+                      <PortalSelect
                         value={entry.statementArea}
                         disabled={!canEdit}
-                        onChange={(event) =>
+                        onChange={(value) =>
                           setEliminations((current) =>
                             current.map((candidate) =>
                               candidate.id === entry.id
-                                ? { ...candidate, statementArea: event.target.value === "profit-and-loss" ? "profit-and-loss" : "balance-sheet" }
+                                ? { ...candidate, statementArea: value === "profit-and-loss" ? "profit-and-loss" : "balance-sheet" }
                                 : candidate,
                             ),
                           )
                         }
-                        className="field-input min-w-[170px] py-3"
-                      >
-                        <option value="balance-sheet">Balance sheet</option>
-                        <option value="profit-and-loss">Profit and loss</option>
-                      </select>
+                        fullWidth={false}
+                        formControlProps={{ sx: { minWidth: 170 } }}
+                        options={[
+                          { value: "balance-sheet", label: "Balance sheet" },
+                          { value: "profit-and-loss", label: "Profit and loss" },
+                        ]}
+                      />
                     </td>
                     <td className="px-4 py-3">
                       <input
@@ -353,21 +349,23 @@ export function ConsolidationManager({
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <select
+                      <PortalSelect
                         value={entry.direction}
                         disabled={!canEdit}
-                        onChange={(event) =>
+                        onChange={(value) =>
                           setEliminations((current) =>
                             current.map((candidate) =>
-                              candidate.id === entry.id ? { ...candidate, direction: event.target.value === "increase" ? "increase" : "decrease" } : candidate,
+                              candidate.id === entry.id ? { ...candidate, direction: value === "increase" ? "increase" : "decrease" } : candidate,
                             ),
                           )
                         }
-                        className="field-input min-w-[120px] py-3"
-                      >
-                        <option value="decrease">Reduce</option>
-                        <option value="increase">Increase</option>
-                      </select>
+                        fullWidth={false}
+                        formControlProps={{ sx: { minWidth: 120 } }}
+                        options={[
+                          { value: "decrease", label: "Reduce" },
+                          { value: "increase", label: "Increase" },
+                        ]}
+                      />
                     </td>
                     <td className="px-4 py-3">
                       <input
@@ -383,14 +381,14 @@ export function ConsolidationManager({
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <button
+                      <PortalButton
+                        variant="secondary"
                         type="button"
                         disabled={!canEdit}
                         onClick={() => setEliminations((current) => current.filter((candidate) => candidate.id !== entry.id))}
-                        className="portal-button-secondary px-4 py-2 text-sm font-medium disabled:opacity-60"
                       >
                         Remove
-                      </button>
+                      </PortalButton>
                     </td>
                   </tr>
                 ))}
@@ -407,21 +405,16 @@ export function ConsolidationManager({
         </div>
       )}
 
-      <div className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200/70 bg-slate-50/80 p-5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-slate-200/70 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-900/60 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="font-medium text-slate-950">Included in this consolidation</p>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="font-medium text-slate-950 dark:text-slate-50">Included in this consolidation</p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             {includedCompanies.map((company) => company.name).join(", ")}
           </p>
         </div>
-        <button
-          type="button"
-          disabled={!canEdit || isPending}
-          onClick={saveConfig}
-          className="portal-button-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
-        >
+        <PortalButton variant="primary" type="button" disabled={!canEdit || isPending} onClick={saveConfig}>
           {isPending ? "Saving..." : "Save consolidation setup"}
-        </button>
+        </PortalButton>
       </div>
     </div>
   );

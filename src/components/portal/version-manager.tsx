@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CloudUpload, FileSpreadsheet, History, Sparkles } from "lucide-react";
 
+import { PortalButton } from "@/components/ui/portal-button";
 import type { StatementVersionRecord, WorkspaceContext } from "@/lib/company-workspace";
 
 export function VersionManager({
@@ -138,14 +139,15 @@ export function VersionManager({
               </label>
             </div>
 
-            <button
+            <PortalButton
+              variant="primary"
               type="button"
               disabled={isPending || !trialBalanceFile}
               onClick={createVersion}
-              className="portal-button-primary mt-3 inline-flex h-10 items-center justify-center px-4 py-2 text-sm font-semibold disabled:opacity-60"
+              className="mt-3"
             >
               {isPending ? "Uploading..." : "Upload TB"}
-            </button>
+            </PortalButton>
           </div>
         </div>
       ) : null}
@@ -161,29 +163,31 @@ export function VersionManager({
             {context.versions.length} versions
           </div>
         </div>
-        <div className="enterprise-table rounded-none border-0 shadow-none">
-          <table className="min-w-full text-left text-sm">
-            <thead>
-              <tr>
-                <th className="px-4 py-3 font-medium">Version</th>
-                <th className="px-4 py-3 font-medium">Financial year</th>
-                <th className="px-4 py-3 font-medium">Trial balance</th>
-                <th className="px-4 py-3 font-medium">Uploaded reference workbook</th>
-                <th className="px-4 py-3 font-medium">Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {context.versions.map((version: StatementVersionRecord) => (
-                <tr key={version.id} className="border-t border-slate-200/70 dark:border-white/10">
-                  <td className="px-4 py-3 font-medium">{version.label}</td>
-                  <td className="px-4 py-3">{version.financialYear}</td>
-                  <td className="px-4 py-3">{version.trialBalanceWorkbookName}</td>
-                  <td className="px-4 py-3">{version.statementWorkbookName}</td>
-                  <td className="px-4 py-3">{new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(version.createdAt))}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-3 px-5 py-4">
+          {context.versions.map((version: StatementVersionRecord) => (
+            <div
+              key={version.id}
+              className="rounded-xl border border-slate-200/70 bg-slate-50/70 px-4 py-3 dark:border-white/10 dark:bg-slate-900/55"
+            >
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-950 dark:text-slate-50">{version.label}</p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{version.financialYear}</p>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(version.createdAt))}
+                </p>
+              </div>
+              <div className="mt-3 grid gap-2 text-sm text-slate-600 dark:text-slate-300 md:grid-cols-2">
+                <p className="truncate" title={version.trialBalanceWorkbookName}>
+                  Trial balance: <span className="font-medium text-slate-800 dark:text-slate-100">{version.trialBalanceWorkbookName}</span>
+                </p>
+                <p className="truncate" title={version.statementWorkbookName}>
+                  Reference workbook: <span className="font-medium text-slate-800 dark:text-slate-100">{version.statementWorkbookName}</span>
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

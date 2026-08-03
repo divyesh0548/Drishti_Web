@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 
+import { PortalButton, PortalIconButton } from "@/components/ui/portal-button";
 import type { AiCopilotPrompt } from "@/lib/ai-workflow";
 import { Bot, SendHorizonal, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 function normalize(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9\s]/g, " ");
@@ -60,39 +60,55 @@ export function DrishtiAiCopilot({
             <input
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              className="field-input pr-12"
+              className="field-input field-input-icon-right"
               placeholder="Why has EBITDA reduced this year?"
             />
-            <button
+            <PortalIconButton
               type="button"
+              aria-label="Ask Drishti AI"
               onClick={() => {
                 const match = bestMatch(draft, prompts);
                 if (match) {
                   setSelectedPrompt(match.prompt);
                 }
               }}
-              className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl bg-blue-600 text-white transition hover:bg-blue-700"
+              sx={{
+                position: "absolute",
+                right: 8,
+                top: "50%",
+                transform: "translateY(-50%)",
+                zIndex: 2,
+                height: 36,
+                width: 36,
+                borderRadius: "0.75rem",
+                borderColor: "transparent",
+                bgcolor: "primary.main",
+                color: "#eff6ff",
+                "&:hover": {
+                  bgcolor: "primary.dark",
+                  borderColor: "transparent",
+                  color: "#eff6ff",
+                },
+              }}
             >
               <SendHorizonal className="h-4 w-4" />
-            </button>
+            </PortalIconButton>
           </div>
         </label>
 
         <div className="mt-4 space-y-2">
           {prompts.map((entry) => (
-            <button
+            <PortalButton
               key={entry.prompt}
+              variant="tab"
+              active={selectedPrompt === entry.prompt}
               type="button"
+              fullWidth
               onClick={() => setSelectedPrompt(entry.prompt)}
-              className={cn(
-                "w-full rounded-[1rem] px-4 py-3 text-left text-sm transition",
-                selectedPrompt === entry.prompt
-                  ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-500/12 dark:text-blue-300 dark:ring-blue-500/20"
-                  : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-200 dark:ring-white/10 dark:hover:bg-slate-900",
-              )}
+              sx={{ borderRadius: "1rem", justifyContent: "flex-start", textAlign: "left", textTransform: "none", py: 1.5 }}
             >
               {entry.prompt}
-            </button>
+            </PortalButton>
           ))}
         </div>
       </div>

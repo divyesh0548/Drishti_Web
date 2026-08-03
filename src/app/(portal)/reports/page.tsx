@@ -1,6 +1,7 @@
 import { DrishtiAiCopilot } from "@/components/portal/drishti-ai-copilot";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { PageHeader, SectionCard, StatusPill } from "@/components/portal/cards";
+import { PortalButton } from "@/components/ui/portal-button";
 import { buildAiWorkflowInsights } from "@/lib/ai-workflow";
 import { buildKeyRatioTable } from "@/lib/key-ratios";
 import { assertRouteAccess } from "@/lib/navigation";
@@ -57,8 +58,8 @@ export default async function ReportsPage({
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr] xl:items-start">
-        <SectionCard title="Export center" eyebrow="Report delivery">
+      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <SectionCard title="Export center" eyebrow="Report delivery" className="h-fit w-full">
           <div className="space-y-4">
             {[
               {
@@ -85,31 +86,33 @@ export default async function ReportsPage({
             ].map((bundle) => (
               <div
                 key={bundle.title}
-                className="flex flex-col gap-3 rounded-[1.35rem] border border-slate-200/70 bg-slate-50/80 p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/70 md:flex-row md:items-center md:justify-between"
+                className="grid gap-3 rounded-[1.35rem] border border-slate-200/70 bg-slate-50/80 p-4 shadow-sm dark:border-white/10 dark:bg-slate-900/70 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium">{bundle.title}</p>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{bundle.format}</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 justify-self-start md:justify-self-end">
                   <StatusPill
                     label={bundle.status}
                     tone={bundle.status === "Ready now" || bundle.status === "Clear" ? "positive" : "warning"}
+                    className="min-w-[6.75rem]"
                   />
-                  <a
+                  <PortalButton
+                    variant="primary"
                     href={bundle.href}
-                    className="portal-button-primary inline-flex items-center gap-2 px-4 py-2 text-sm font-medium"
+                    startIcon={<bundle.icon className="h-4 w-4" />}
+                    sx={{ minWidth: "6.5rem" }}
                   >
-                    <bundle.icon className="h-4 w-4" />
                     Open
-                  </a>
+                  </PortalButton>
                 </div>
               </div>
             ))}
           </div>
         </SectionCard>
 
-        <SectionCard title="Generated report highlights" eyebrow="From the imported trial balance">
+        <SectionCard title="Generated report highlights" eyebrow="From the imported trial balance" className="h-fit w-full">
           <div className="space-y-4">
             {[
               `Balance sheet totals currently reconcile at ${formatCurrency(pack.balanceSheet.totalCurrent)} for the current year.`,
@@ -136,13 +139,9 @@ export default async function ReportsPage({
                   });
 
                   return (
-                    <a
-                      key={version.id}
-                      href={`/api/exports/excel?${versionQuery}`}
-                      className="portal-button-secondary px-4 py-2 text-sm font-medium"
-                    >
+                    <PortalButton key={version.id} variant="secondary" href={`/api/exports/excel?${versionQuery}`}>
                       {version.label}
-                    </a>
+                    </PortalButton>
                   );
                 })}
               </div>
@@ -151,8 +150,8 @@ export default async function ReportsPage({
         </SectionCard>
       </div>
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr] xl:items-start">
-        <SectionCard title="AI financial analysis" eyebrow="Executive, profitability, liquidity, solvency, and efficiency">
+      <section className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <SectionCard title="AI financial analysis" eyebrow="Executive, profitability, liquidity, solvency, and efficiency" className="h-fit w-full">
           <div className="space-y-5">
             {[
               { title: "Executive Summary", lines: aiInsights.executiveSummary },
@@ -172,10 +171,10 @@ export default async function ReportsPage({
           </div>
         </SectionCard>
 
-        <SectionCard title="Institutional report themes" eyebrow="CFO and board-ready output styles">
-          <div className="grid items-start gap-4 md:grid-cols-2">
+        <SectionCard title="Institutional report themes" eyebrow="CFO and board-ready output styles" className="h-fit w-full">
+          <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
             {aiInsights.reportThemes.map((theme) => (
-              <div key={theme} className="rounded-[1.2rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/60">
+              <div key={theme} className="h-full rounded-[1.2rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/60">
                 <p className="font-semibold text-slate-950 dark:text-slate-50">{theme}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                   Use this presentation direction for auditor packs, management discussion, investor updates, or board-ready reporting.

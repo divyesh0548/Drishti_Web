@@ -63,6 +63,7 @@ export default async function MappingStudioPage({
         }
       >
         <GroupingManager
+          key={`${context.company.id}-${context.currentVersion.id}`}
           rows={snapshot.rows}
           options={groupingOptions}
           subgroupOptions={subgroupOptions}
@@ -73,11 +74,11 @@ export default async function MappingStudioPage({
         />
       </SectionCard>
 
-      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr] xl:items-start">
         <SectionCard title="AI GL classification engine" eyebrow="Confidence-driven account routing">
-          <div className="space-y-3">
+          <div className="space-y-4">
             {aiInsights.classificationSummary.map((item) => (
-              <div key={item.label} className="rounded-[1.2rem] border border-slate-200/70 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-900/60">
+              <div key={item.label} className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-900/60">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="font-semibold text-slate-950 dark:text-slate-50">{item.label}</p>
                   <StatusPill
@@ -85,16 +86,16 @@ export default async function MappingStudioPage({
                     tone={item.confidence === "High" ? "positive" : item.confidence === "Medium" ? "warning" : "neutral"}
                   />
                 </div>
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{item.count} ledgers currently contribute to this classification layer.</p>
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{item.count} ledgers currently contribute to this classification layer.</p>
               </div>
             ))}
           </div>
         </SectionCard>
 
         <SectionCard title="Mapping templates and AI suggestions" eyebrow="Company-wise and industry-ready mapping">
-          <div className="space-y-3">
+          <div className="space-y-4">
             {aiInsights.mappingSuggestions.map((suggestion) => (
-              <div key={suggestion.field} className="rounded-[1.2rem] border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/60">
+              <div key={suggestion.field} className="rounded-xl border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/60">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="font-semibold text-slate-950 dark:text-slate-50">{suggestion.field}</p>
                   <StatusPill
@@ -102,8 +103,8 @@ export default async function MappingStudioPage({
                     tone={suggestion.confidence === "High" ? "positive" : suggestion.confidence === "Medium" ? "warning" : "neutral"}
                   />
                 </div>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Suggested source: {suggestion.detectedFrom}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{suggestion.detail}</p>
+                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">Suggested source: {suggestion.detectedFrom}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">{suggestion.detail}</p>
               </div>
             ))}
           </div>

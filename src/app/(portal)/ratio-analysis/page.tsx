@@ -3,6 +3,7 @@ import { Download } from "lucide-react";
 import { PageHeader, SectionCard, StatusPill } from "@/components/portal/cards";
 import { RatioAnalysisTabs } from "@/components/portal/ratio-analysis-tabs";
 import { RatioLedgerSelectionManager } from "@/components/portal/ratio-ledger-selection-manager";
+import { PortalButton } from "@/components/ui/portal-button";
 import { buildKeyRatioTable, ratioDefinitions } from "@/lib/key-ratios";
 import { assertRouteAccess } from "@/lib/navigation";
 import { buildWorkspaceQuery, resolveWorkspaceContextFromSearchParams } from "@/lib/portal-context";
@@ -52,13 +53,13 @@ export default async function RatioAnalysisPage({
         title="Ratio analysis"
         description="Review the full ratio table for the active version and export it directly for audit, management, or review use."
         action={
-          <a
+          <PortalButton
+            variant="primary"
             href={`/api/exports/ratios?${baseQuery}`}
-            className="portal-button-primary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+            startIcon={<Download className="h-4 w-4" />}
           >
-            <Download className="h-4 w-4" />
             Export ratios
-          </a>
+          </PortalButton>
         }
         meta={
           <>

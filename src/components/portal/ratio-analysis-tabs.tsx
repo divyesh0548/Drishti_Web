@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { cn } from "@/lib/utils";
+import { PortalButton } from "@/components/ui/portal-button";
 
 type RatioTab = "ratios" | "ledgers";
 
@@ -22,21 +22,23 @@ export function RatioAnalysisTabs({
 
   return (
     <div className="space-y-4">
-      <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-slate-950">
+      <div className="inline-flex gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-slate-950">
         {tabs.map((tab) => (
-          <button
+          <PortalButton
             key={tab.id}
+            variant="tab"
+            active={activeTab === tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "min-h-10 rounded-lg px-4 text-sm font-semibold text-slate-600 transition dark:text-slate-300",
-              activeTab === tab.id
-                ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-100 dark:bg-blue-500/12 dark:text-blue-300 dark:ring-blue-500/20"
-                : "hover:bg-slate-50 dark:hover:bg-slate-900",
-            )}
+            sx={{
+              borderRadius: "0.65rem",
+              minHeight: 36,
+              px: 2.5,
+              boxShadow: "none",
+            }}
           >
             {tab.label}
-          </button>
+          </PortalButton>
         ))}
       </div>
 

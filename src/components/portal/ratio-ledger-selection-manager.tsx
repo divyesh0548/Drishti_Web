@@ -4,6 +4,8 @@ import { useDeferredValue, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { StatusPill, SummaryLabel } from "@/components/portal/cards";
+import { PortalButton } from "@/components/ui/portal-button";
+import { PortalSelect } from "@/components/ui/portal-select";
 import type { RatioDefinition } from "@/lib/key-ratios";
 import type { RatioLedgerConfigStore } from "@/lib/ratio-ledger-config";
 import type { LedgerRow } from "@/lib/trial-balance";
@@ -109,17 +111,13 @@ export function RatioLedgerSelectionManager({
           />
           {selectedRatio ? (
             <>
-              <select
+              <PortalSelect
                 value={selectedRatio.id}
-                onChange={(event) => setSelectedRatioId(event.target.value)}
-                className="field-input min-w-[250px] py-3"
-              >
-                {ratioDefinitions.map((definition) => (
-                  <option key={definition.id} value={definition.id}>
-                    {definition.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setSelectedRatioId(value)}
+                fullWidth={false}
+                formControlProps={{ sx: { minWidth: 250 } }}
+                options={ratioDefinitions.map((definition) => ({ value: definition.id, label: definition.label }))}
+              />
               <div className="flex flex-wrap gap-2">
                 <SummaryLabel label={`${ratioSelectedCount} selected`} tone="positive" width="9.5rem" />
                 <SummaryLabel label={`${ratioCandidateRows.length - ratioSelectedCount} excluded`} tone="neutral" width="9.5rem" />
@@ -152,7 +150,8 @@ export function RatioLedgerSelectionManager({
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Mapped note buckets: {selectedRatio.notes}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button
+                <PortalButton
+                  variant="secondary"
                   type="button"
                   disabled={!canEdit || isPending}
                   onClick={() =>
@@ -161,11 +160,11 @@ export function RatioLedgerSelectionManager({
                       [selectedRatio.id]: [],
                     }))
                   }
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
                 >
                   Select all
-                </button>
-                <button
+                </PortalButton>
+                <PortalButton
+                  variant="secondary"
                   type="button"
                   disabled={!canEdit || isPending}
                   onClick={() =>
@@ -174,18 +173,17 @@ export function RatioLedgerSelectionManager({
                       [selectedRatio.id]: ratioCandidateRows.map((row) => row.glNumber),
                     }))
                   }
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
                 >
                   Deselect all
-                </button>
-                <button
+                </PortalButton>
+                <PortalButton
+                  variant="primary"
                   type="button"
                   disabled={!canEdit || isPending}
                   onClick={() => saveRatioSelection(selectedRatio.id)}
-                  className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60 dark:bg-teal-400 dark:text-slate-950 dark:hover:bg-teal-300"
                 >
                   Save ratio selection
-                </button>
+                </PortalButton>
               </div>
             </div>
           </div>

@@ -2,8 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import dayjs, { type Dayjs } from "dayjs";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 
 import { StatusPill } from "@/components/portal/cards";
+import { PortalButton } from "@/components/ui/portal-button";
 import type { AgeingGroup, AgeingKind, AgeingStore, AgeingSummary } from "@/lib/ageing";
 
 function emptyGroup(): AgeingGroup {
@@ -189,29 +194,51 @@ export function AgeingManager({
 
       <section className="space-y-5">
         <div className="rounded-xl border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/70">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-4">
             <div>
               <p className="text-lg font-semibold text-slate-950 dark:text-slate-50">Ageing logic</p>
               <p className="mt-1 text-sm text-slate-500">
                 Define the ageing cut-off date and customize the buckets used for both Normal and MSME summaries.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="date"
-                value={asOfDate}
-                disabled={!canEdit}
-                onChange={(event) => setAsOfDate(event.target.value)}
-                className="field-input field-input-compact w-[150px] text-sm"
-              />
-              <button
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="As of date"
+                  value={asOfDate ? dayjs(asOfDate) : null}
+                  disabled={!canEdit}
+                  format="DD MMM YYYY"
+                  onChange={(value: Dayjs | null) => {
+                    setAsOfDate(value?.isValid() ? value.format("YYYY-MM-DD") : "");
+                  }}
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      sx: {
+                        minWidth: 210,
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "1rem",
+                          height: 40,
+                        },
+                      },
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+              <PortalButton
+                variant="primary"
                 type="button"
                 disabled={!canEdit || isPending}
                 onClick={saveAgeingLogic}
-                className="portal-button-primary inline-flex h-10 items-center justify-center px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                sx={{
+                  boxShadow: "none !important",
+                  height: 40,
+                  alignSelf: { xs: "stretch", sm: "center" },
+                  "&:hover": { boxShadow: "none !important" },
+                }}
               >
                 Save logic
-              </button>
+              </PortalButton>
             </div>
           </div>
 
@@ -267,27 +294,28 @@ export function AgeingManager({
                   className="field-input field-input-compact text-sm"
                   placeholder="Max days"
                 />
-                <button
+                <PortalButton
+                  variant="secondary"
                   type="button"
                   disabled={!canEdit || isPending || ageGroups.length === 1}
                   onClick={() => setAgeGroups((current) => current.filter((entry) => entry.id !== group.id))}
-                  className="portal-button-secondary inline-flex h-10 items-center justify-center px-4 py-2 text-sm font-semibold disabled:opacity-60"
                 >
                   Remove
-                </button>
+                </PortalButton>
                 <p className="xl:col-span-4 text-xs text-slate-500">
                   Bucket {index + 1}: leave min or max blank to keep the range open-ended.
                 </p>
               </div>
             ))}
-            <button
+            <PortalButton
+              variant="secondary"
               type="button"
               disabled={!canEdit || isPending}
               onClick={() => setAgeGroups((current) => [...current, emptyGroup()])}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50/40 disabled:opacity-60 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
+              sx={{ borderStyle: "dashed" }}
             >
               Add ageing bucket
-            </button>
+            </PortalButton>
           </div>
         </div>
 
@@ -328,14 +356,9 @@ export function AgeingManager({
                     />
                     <span className="truncate">{files[kind]?.name ?? "Choose file"}</span>
                   </label>
-                  <button
-                    type="button"
-                    disabled={!canEdit || isPending}
-                    onClick={() => uploadLedgerFile(kind)}
-                    className="portal-button-primary inline-flex h-10 items-center justify-center px-4 py-2 text-sm font-semibold disabled:opacity-60"
-                  >
+                  <PortalButton variant="primary" type="button" disabled={!canEdit || isPending} onClick={() => uploadLedgerFile(kind)}>
                     Upload {kind === "receivables" ? "Receivables" : "Payables"}
-                  </button>
+                  </PortalButton>
                 </div>
               </div>
             ))}

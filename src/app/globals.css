@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Keep MUI styles compatible with Tailwind layer order */
+@layer theme, base, mui, components, utilities;
+
 /* Align Tailwind dark: utilities with next-themes class strategy */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -184,6 +187,10 @@ textarea {
   padding-right: 2.5rem !important;
 }
 
+select.field-input {
+  padding-right: 2.5rem;
+}
+
 .portal-button-primary,
 .portal-button-secondary,
 .portal-tab-button,
@@ -333,24 +340,30 @@ textarea {
   -webkit-text-fill-color: var(--sidebar-link);
 }
 
+.portal-scrollbar,
 .portal-sidebar-scroll {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--primary) 28%, transparent) transparent;
 }
 
+.portal-scrollbar::-webkit-scrollbar,
 .portal-sidebar-scroll::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
+.portal-scrollbar::-webkit-scrollbar-track,
 .portal-sidebar-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
+.portal-scrollbar::-webkit-scrollbar-thumb,
 .portal-sidebar-scroll::-webkit-scrollbar-thumb {
   border-radius: 9999px;
   background: color-mix(in srgb, var(--primary) 22%, transparent);
 }
 
+.portal-scrollbar::-webkit-scrollbar-thumb:hover,
 .portal-sidebar-scroll::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--primary) 38%, transparent);
 }

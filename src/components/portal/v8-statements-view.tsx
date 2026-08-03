@@ -4,9 +4,10 @@ import { useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { MiniStat, PageHeader, SectionCard, StatusPill } from "@/components/portal/cards";
+import { PortalButton } from "@/components/ui/portal-button";
 import type { V8FinancialModel, V8WorkbookSheet } from "@/lib/v8-financials";
 import { cn } from "@/lib/utils";
-import { BookOpen, FileDown, Printer, ZoomIn } from "lucide-react";
+import { BookOpen, FileDown, Printer } from "lucide-react";
 
 const statementSheetConfigs: Partial<Record<string, { columns: number[]; roundedValueColumns: number[]; widths: string[]; fixed?: boolean }>> = {
   BS: {
@@ -153,38 +154,43 @@ function WorkbookSheetTable({ sheet }: { sheet: V8WorkbookSheet }) {
   const config = statementSheetConfigs[sheet.name];
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-[1.75rem] border border-slate-200/70 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-900/70">
-        <p className="text-sm uppercase tracking-[0.08em] text-slate-500">{sheet.name}</p>
+    <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/80 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-slate-950/70 dark:shadow-[0_12px_32px_rgba(2,6,23,0.35)]">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-200/70 bg-slate-50/90 px-4 py-3 dark:border-white/10 dark:bg-slate-900/70">
+        <div>
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Active sheet</p>
+          <p className="mt-0.5 font-semibold text-slate-950 dark:text-slate-50">{sheet.name}</p>
+        </div>
+        <StatusPill label={`${sheet.rows.length} rows`} tone="neutral" />
       </div>
+      <div className="max-h-[70vh] overflow-auto p-3 sm:p-4">
+        <div className="overflow-hidden rounded-xl border border-slate-200/70 dark:border-white/10">
+          <table className={cn(config?.fixed ? "w-full table-fixed" : "min-w-max", "text-left text-sm")}>
+            <tbody>
+              {sheet.rows.map((row, rowIndex) => {
+                const tone = rowTone(row, rowIndex);
 
-      <div className="overflow-auto rounded-2xl border border-slate-200/70 dark:border-white/10">
-        <table className={cn(config?.fixed ? "w-full table-fixed" : "min-w-max", "text-left text-sm")}>
-          <tbody>
-            {sheet.rows.map((row, rowIndex) => {
-              const tone = rowTone(row, rowIndex);
-
-              return (
-                <tr key={`${sheet.name}-${rowIndex}`} className={cn("border-t border-slate-200/70 dark:border-white/10", rowClassName(tone))}>
-                  {visibleColumns.map((columnIndex, visibleColumnIndex) => (
-                    <td
-                      key={`${sheet.name}-${rowIndex}-${columnIndex}`}
-                      style={config?.widths?.[visibleColumnIndex] ? { width: config.widths[visibleColumnIndex] } : undefined}
-                      className={cn(
-                        "px-3 py-2 align-top whitespace-pre-wrap break-words",
-                        visibleColumnIndex === 0 ? "font-medium" : "",
-                        visibleColumnIndex === 0 && config?.fixed ? "w-[58%]" : "",
-                        visibleColumnIndex > 0 && config?.fixed ? "text-right" : "",
-                      )}
-                    >
-                      {formatCellValue(sheet, columnIndex, row[columnIndex] || "")}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                return (
+                  <tr key={`${sheet.name}-${rowIndex}`} className={cn("border-t border-slate-200/70 dark:border-white/10", rowClassName(tone))}>
+                    {visibleColumns.map((columnIndex, visibleColumnIndex) => (
+                      <td
+                        key={`${sheet.name}-${rowIndex}-${columnIndex}`}
+                        style={config?.widths?.[visibleColumnIndex] ? { width: config.widths[visibleColumnIndex] } : undefined}
+                        className={cn(
+                          "px-3.5 py-2.5 align-top whitespace-pre-wrap break-words",
+                          visibleColumnIndex === 0 ? "font-medium" : "",
+                          visibleColumnIndex === 0 && config?.fixed ? "w-[58%]" : "",
+                          visibleColumnIndex > 0 && config?.fixed ? "text-right" : "",
+                        )}
+                      >
+                        {formatCellValue(sheet, columnIndex, row[columnIndex] || "")}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -287,14 +293,20 @@ export function V8StatementsView({
         }
         action={
           <>
-            <a href={`/api/exports/excel${query ? `?${query}` : ""}`} className="portal-button-primary inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold">
-              <FileDown className="h-4 w-4" />
+            <PortalButton
+              variant="primary"
+              href={`/api/exports/excel${query ? `?${query}` : ""}`}
+              startIcon={<FileDown className="h-4 w-4" />}
+            >
               Download Excel
-            </a>
-            <a href={`/api/exports/pdf${query ? `?${query}` : ""}`} className="portal-button-secondary inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold">
-              <Printer className="h-4 w-4" />
+            </PortalButton>
+            <PortalButton
+              variant="secondary"
+              href={`/api/exports/pdf${query ? `?${query}` : ""}`}
+              startIcon={<Printer className="h-4 w-4" />}
+            >
               Download PDF
-            </a>
+            </PortalButton>
           </>
         }
       />
@@ -316,36 +328,56 @@ export function V8StatementsView({
           </div>
         }
       >
-        <div className="grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
-          <div className="space-y-4">
-            <div className="rounded-[1.4rem] border border-slate-200/70 bg-slate-50/75 p-4 dark:border-white/10 dark:bg-slate-900/60">
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-                <p className="font-semibold text-slate-950 dark:text-slate-50">Workbook navigation</p>
-              </div>
-              <div className="mt-4 space-y-2">
-                {model.sheets.map((sheet) => (
-                  <button
-                    key={sheet.name}
-                    type="button"
-                    onClick={() => loadSheet(sheet.name)}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-[1rem] px-4 py-3 text-left text-sm font-medium transition",
-                      activeSheet === sheet.name
-                        ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-500/12 dark:text-blue-300 dark:ring-blue-500/20"
-                        : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-950 dark:text-slate-200 dark:ring-white/10 dark:hover:bg-slate-900",
-                    )}
-                  >
-                    <span>{sheet.name}</span>
-                    {activeSheet === sheet.name ? <ZoomIn className="h-4 w-4" /> : null}
-                  </button>
-                ))}
+        <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)] xl:items-start">
+          <aside className="h-fit overflow-hidden rounded-[1.4rem] border border-slate-200/80 bg-gradient-to-b from-slate-50 to-white shadow-sm dark:border-white/10 dark:from-slate-900/80 dark:to-slate-950/80">
+            <div className="border-b border-slate-200/70 px-5 py-4 dark:border-white/10">
+              <div className="flex items-center gap-2.5">
+                <span className="grid h-8 w-8 place-items-center rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-500/12 dark:text-blue-300">
+                  <BookOpen className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="font-semibold text-slate-950 dark:text-slate-50">Workbook navigation</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{model.sheets.length} sheets available</p>
+                </div>
               </div>
             </div>
-          </div>
+            <nav className="max-h-[min(70vh,36rem)] space-y-2 overflow-y-auto p-4 sm:p-5">
+              {model.sheets.map((sheet) => {
+                const isActive = activeSheet === sheet.name;
 
-          <div className="space-y-5">
-            {isPending ? <p className="text-sm text-slate-500 dark:text-slate-400">Loading workbook tab...</p> : null}
+                return (
+                  <PortalButton
+                    key={sheet.name}
+                    variant="tab"
+                    active={isActive}
+                    type="button"
+                    fullWidth
+                    onClick={() => loadSheet(sheet.name)}
+                    sx={{
+                      borderRadius: "0.9rem",
+                      justifyContent: "flex-start",
+                      textAlign: "left",
+                      textTransform: "none",
+                      px: 1.75,
+                      py: 1.35,
+                      minHeight: 44,
+                      boxShadow: "none",
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {sheet.name}
+                  </PortalButton>
+                );
+              })}
+            </nav>
+          </aside>
+
+          <div className="min-w-0 space-y-5">
+            {isPending ? (
+              <div className="rounded-[1.2rem] border border-dashed border-amber-300/80 bg-amber-50/70 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+                Loading workbook tab...
+              </div>
+            ) : null}
             {selectedSheet ? <WorkbookSheetTable sheet={selectedSheet} /> : null}
             {selectedSheet && statementSheetNames.has(selectedSheet.name) ? (
               <SignatoryBlock

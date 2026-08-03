@@ -6,6 +6,7 @@ import type { WorkspaceUser } from "@/lib/company-workspace";
 import { getNavigationForRole } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { Blocks, Building2, ChartNoAxesCombined, ChartPie, ChevronLeft, ChevronRight, Combine, FileSpreadsheet, FileText, GitBranch, LayoutDashboard, LogOut, ReceiptText, Settings2, Users2 } from "lucide-react";
+import { PortalButton, PortalIconButton } from "@/components/ui/portal-button";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -66,12 +67,32 @@ function WorkspaceLink({
   collapsed: boolean;
   queryString: string;
 }) {
+  const router = useRouter();
   const Icon = iconMap[href] ?? LayoutDashboard;
+  // Preserve workspace query params. Prefer router.push over Link's soft nav —
+  // Next.js 15 can fetch RSC for `?`-hrefs without committing the page on first click.
+  const destination = (queryString ? `${href}?${queryString}` : href) as Route;
 
   return (
     <Link
-      href={(queryString ? `${href}?${queryString}` : href) as Route}
+      href={destination}
+      prefetch={false}
       aria-current={active ? "page" : undefined}
+      onClick={(event) => {
+        if (
+          event.defaultPrevented ||
+          event.button !== 0 ||
+          event.metaKey ||
+          event.altKey ||
+          event.ctrlKey ||
+          event.shiftKey
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+        router.push(destination);
+      }}
       className={cn(
         "portal-sidebar-link flex items-center gap-3 px-3 py-2.5 text-sm font-medium",
         collapsed ? "justify-center px-2" : "justify-between",
@@ -137,14 +158,26 @@ export function Sidebar({
           </div>
         ) : null}
 
-        <button
-          type="button"
+        <PortalIconButton
           onClick={onToggleCollapse}
-          className="portal-sidebar-toggle grid h-10 w-10 shrink-0 place-items-center rounded-xl transition"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          sx={{
+            height: 40,
+            width: 40,
+            flexShrink: 0,
+            borderRadius: "0.75rem",
+            borderColor: "var(--border)",
+            bgcolor: "var(--surface-strong)",
+            color: "var(--sidebar-fg)",
+            "&:hover": {
+              bgcolor: "var(--surface)",
+              borderColor: "var(--border-strong)",
+              color: "var(--sidebar-fg)",
+            },
+          }}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
+        </PortalIconButton>
       </div>
 
       <nav className="portal-sidebar-scroll mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden pr-1">
@@ -179,10 +212,18 @@ export function Sidebar({
       </nav>
 
       <div className={cn("portal-sidebar-profile mt-4 shrink-0 rounded-[1.35rem] p-3", collapsed && "px-3 py-3")}>
-        <button
-          type="button"
+        <PortalButton
+          variant="text"
+          fullWidth
           onClick={() => setProfileOpen((current) => !current)}
-          className={cn("flex w-full items-center gap-3 text-left", collapsed && "justify-center")}
+          className={cn("gap-3 text-left", collapsed && "justify-center")}
+          sx={{
+            p: 0,
+            color: "inherit",
+            textTransform: "none",
+            justifyContent: collapsed ? "center" : "flex-start",
+            "&:hover": { bgcolor: "transparent" },
+          }}
         >
           <div className="portal-sidebar-avatar grid h-10 w-10 place-items-center rounded-2xl text-sm font-semibold">
             {currentUser.name
@@ -197,18 +238,19 @@ export function Sidebar({
               <p className="portal-sidebar-muted text-xs">{currentUser.role.replace("_", " ")}</p>
             </div>
           ) : null}
-        </button>
+        </PortalButton>
 
         {!collapsed && profileOpen ? (
           <div className="portal-sidebar-divider mt-3 pt-3">
-            <button
-              type="button"
+            <PortalButton
+              variant="secondary"
+              fullWidth
               onClick={signOut}
-              className="portal-button-secondary inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-medium"
+              startIcon={<LogOut className="h-4 w-4" />}
+              sx={{ borderRadius: "1rem", textTransform: "none", py: 1 }}
             >
-              <LogOut className="h-4 w-4" />
               Logout
-            </button>
+            </PortalButton>
           </div>
         ) : null}
       </div>

@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { PortalButton } from "@/components/ui/portal-button";
+import { PortalSelect } from "@/components/ui/portal-select";
 import type { CompanySettings, WorkspaceContext } from "@/lib/company-workspace";
 
 type UserRole = "COMPANY_ADMIN" | "FINANCE" | "AUDITOR";
@@ -202,7 +204,8 @@ export function WorkspaceAdmin({
               placeholder="Company admin password"
             />
           </div>
-          <button
+          <PortalButton
+            variant="primary"
             type="button"
             disabled={
               isPending ||
@@ -213,10 +216,10 @@ export function WorkspaceAdmin({
               !companyForm.adminPassword
             }
             onClick={createCompany}
-            className="mt-4 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-medium text-white disabled:opacity-60"
+            className="mt-4"
           >
             Create company
-          </button>
+          </PortalButton>
         </div>
       ) : null}
 
@@ -288,25 +291,25 @@ export function WorkspaceAdmin({
                   onChange={(event) => setUserForm((current) => ({ ...current, password: event.target.value }))}
                   placeholder="Password"
                 />
-                <select
-                  className="field-input"
+                <PortalSelect
                   value={userForm.role}
-                  onChange={(event) => setUserForm((current) => ({ ...current, role: event.target.value as UserRole }))}
-                >
-                  <option value="COMPANY_ADMIN">Company Admin</option>
-                  <option value="FINANCE">Finance</option>
-                  <option value="AUDITOR">Auditor</option>
-                </select>
+                  onChange={(value) => setUserForm((current) => ({ ...current, role: value as UserRole }))}
+                  options={[
+                    { value: "COMPANY_ADMIN", label: "Company Admin" },
+                    { value: "FINANCE", label: "Finance" },
+                    { value: "AUDITOR", label: "Auditor" },
+                  ]}
+                />
               </div>
             ) : null}
-            <button
+            <PortalButton
+              variant="primary"
               type="button"
               disabled={isPending || !userForm.name || !userForm.email || !userForm.password}
               onClick={createUser}
-              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-medium text-white disabled:opacity-60"
             >
               Add user
-            </button>
+            </PortalButton>
 
             <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200/70 dark:border-white/10">
               <table className="min-w-full text-left text-sm">
@@ -358,9 +361,9 @@ export function WorkspaceAdmin({
                   </div>
                 ))}
                 {context.permissions.canEditSignatories ? (
-                  <button type="button" onClick={() => addSignatory("directors")} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium">
+                  <PortalButton variant="secondary" type="button" onClick={() => addSignatory("directors")}>
                     Add director
-                  </button>
+                  </PortalButton>
                 ) : null}
               </div>
 
@@ -395,9 +398,9 @@ export function WorkspaceAdmin({
                   </div>
                 ))}
                 {context.permissions.canEditSignatories ? (
-                  <button type="button" onClick={() => addSignatory("auditors")} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium">
+                  <PortalButton variant="secondary" type="button" onClick={() => addSignatory("auditors")}>
                     Add auditor
-                  </button>
+                  </PortalButton>
                 ) : null}
               </div>
             </div>
@@ -424,14 +427,9 @@ export function WorkspaceAdmin({
             </div>
 
             {context.permissions.canEditSignatories ? (
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={saveSettings}
-                className="mt-4 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-medium text-white disabled:opacity-60"
-              >
+              <PortalButton variant="primary" type="button" disabled={isPending} onClick={saveSettings} className="mt-4">
                 Save company settings
-              </button>
+              </PortalButton>
             ) : null}
           </div>
         </>

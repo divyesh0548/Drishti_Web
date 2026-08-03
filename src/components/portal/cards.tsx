@@ -116,9 +116,11 @@ export function SectionCard({
 export function StatusPill({
   label,
   tone = "neutral",
+  className,
 }: {
   label: string;
   tone?: "neutral" | "positive" | "warning" | "critical";
+  className?: string;
 }) {
   const toneClasses = {
     neutral: "bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700",
@@ -127,7 +129,17 @@ export function StatusPill({
     critical: "bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/12 dark:text-rose-300 dark:ring-rose-500/20",
   } as const;
 
-  return <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold", toneClasses[tone])}>{label}</span>;
+  return (
+    <span
+      className={cn(
+        "inline-flex w-fit shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold",
+        toneClasses[tone],
+        className,
+      )}
+    >
+      {label}
+    </span>
+  );
 }
 
 export function SummaryLabel({
