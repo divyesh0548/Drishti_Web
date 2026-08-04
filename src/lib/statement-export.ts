@@ -25,7 +25,7 @@ const pageMargin = 42;
 
 type StatementSheetName = "BS" | "PL" | "SOCIE" | "Cash Flow_FY26";
 
-type ExportScope = {
+export type ExportScope = {
   companyId?: string;
   versionId?: string;
 };
@@ -1172,7 +1172,8 @@ function buildLinkedProfitAndLossSheet(input: {
   return sheet;
 }
 
-function buildLinkedStatementWorkbook(scope?: ExportScope) {
+/** Shared V-8 linked workbook builder — used as the default Excel export fallback. */
+export function buildLinkedStatementWorkbook(scope?: ExportScope) {
   const workbook = read(Buffer.from(getV8WorkbookBuffer(scope)), {
     type: "buffer",
     cellStyles: true,
@@ -1778,10 +1779,6 @@ function buildTemplateDrivenWorkbook(scope?: ExportScope) {
   };
 
   return Buffer.from(write(workbook, { type: "buffer", bookType: "xlsx", cellStyles: true }));
-}
-
-export function buildStatementWorkbook(scope?: ExportScope) {
-  return buildLinkedStatementWorkbook(scope);
 }
 
 export async function buildStatementPdf(scope?: ExportScope) {

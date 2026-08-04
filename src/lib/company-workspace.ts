@@ -52,6 +52,8 @@ export type CompanySettings = {
   directors: CompanySignatory[];
   auditors: CompanySignatory[];
   footerNote: string;
+  /** Optional Excel layout profile id. When unset/unknown, the shared V-8 fallback is used. PDF always stays common. */
+  excelProfileId?: string;
 };
 
 export type StatementVersionRecord = {

@@ -1,4 +1,4 @@
-import { buildStatementWorkbook } from "@/lib/statement-export";
+import { buildStatementWorkbookExport } from "@/lib/export/excel";
 import { requireRequestWorkspaceContext } from "@/lib/auth";
 import { getWorkspaceSelection } from "@/lib/portal-context";
 
@@ -13,13 +13,12 @@ export async function GET(request: Request) {
     return Response.json({ error: "Authentication required." }, { status: 401 });
   }
 
-  const workbook = buildStatementWorkbook({
+  const { buffer, fileName } = buildStatementWorkbookExport({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
   });
-  const fileName = "V-8.xlsx";
 
-  return new Response(new Uint8Array(workbook), {
+  return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${fileName}"`,
