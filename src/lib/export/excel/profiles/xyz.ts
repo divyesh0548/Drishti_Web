@@ -3,6 +3,7 @@ import path from "node:path";
 import { read, utils, write, type CellObject, type WorkBook, type WorkSheet } from "xlsx";
 
 import type { ExcelExportContext, ExcelExportProfile } from "@/lib/export/excel/types";
+import { applyXyzPackCellMap } from "@/lib/export/excel/profiles/xyz-pack-map";
 import { getCompanySettings } from "@/lib/company-workspace";
 import type { LedgerRow } from "@/lib/trial-balance";
 
@@ -375,6 +376,9 @@ export function buildXyzStatementWorkbook(context: ExcelExportContext): Buffer {
     `Trial Balance as on ${dates.previous}`,
     context.companyName,
   );
+
+  // Option B: push StatementPack totals into mapped XYZ BS/PL/Notes/PPE/Cash Flow cells.
+  applyXyzPackCellMap(workbook, context.pack);
 
   compactWorkbook(workbook);
 

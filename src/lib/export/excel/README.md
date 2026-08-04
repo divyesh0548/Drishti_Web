@@ -15,7 +15,16 @@ PDF export does **not** use this system — it stays on the shared common render
 |------------|-------------|----------|
 | `xyz-desired-structure` | `xyz` | `templates/excel/xyz-desired-structure.xlsx` |
 
-XYZ exports automatically use the desired workbook structure. No settings change needed.
+### XYZ Option B data fill
+
+`profiles/xyz-pack-map.ts` maps `StatementPack` note totals into XYZ template cells:
+
+- BS / PL face amounts
+- `BS  Notes  4-19` / `PL Notes 20-27` total cells those formulas used
+- `PPE- note 3` carrying value + depreciation
+- Cash Flow net section totals
+
+TB debit/credit still come from the company trial balance. Sheets without a pack source (Ratios, DT workings, IT, Segment, etc.) remain template structure until mapped.
 
 ## Files
 
@@ -26,10 +35,5 @@ XYZ exports automatically use the desired workbook structure. No settings change
 | `index.ts` | `buildStatementWorkbook` entry |
 | `profiles/v8-linked.ts` | Default fallback builder |
 | `profiles/xyz.ts` | XYZ desired structure builder |
+| `profiles/xyz-pack-map.ts` | Pack → XYZ cell map (Option B) |
 | `profiles/custom.ts` | Register company-specific profiles |
-
-## Adding another company layout
-
-1. Put the template under `templates/excel/`
-2. Add a builder in `profiles/`
-3. Register it in `profiles/custom.ts` with `companyIds: ["that-company-id"]`
