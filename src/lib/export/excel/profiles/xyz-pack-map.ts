@@ -269,7 +269,7 @@ function roundLakhs(value: number) {
   if (!Number.isFinite(value)) {
     return 0;
   }
-  return Math.round(value * 100) / 100;
+  return Math.round(value);
 }
 
 export function resolvePackAmount(pack: StatementPack, source: XyzAmountSource): { current: number; previous: number } {
@@ -296,7 +296,8 @@ function setNumericCell(sheet: WorkSheet | undefined, address: string, value: nu
   const next: CellObject = {
     ...existing,
     t: "n",
-    v: value,
+    v: Math.round(value),
+    z: "#,##0;(#,##0);-",
   };
   delete next.f;
   delete next.w;

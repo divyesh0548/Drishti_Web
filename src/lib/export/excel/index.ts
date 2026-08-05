@@ -1,11 +1,13 @@
 import { resolveWorkspaceContext } from "@/lib/company-workspace";
 import { resolveExcelExportProfile } from "@/lib/export/excel/registry";
+import { applyReportTableStylesToWorkbookBuffer } from "@/lib/export/excel/report-table-styles";
 import type { ExcelExportContext, ExcelExportResult, ExportScope } from "@/lib/export/excel/types";
 import { getStatementPack } from "@/lib/statement-pack";
 import { getTrialBalanceSnapshot } from "@/lib/trial-balance";
 
 export type { ExcelExportContext, ExcelExportProfile, ExcelExportResult, ExportScope } from "@/lib/export/excel/types";
 export { listExcelExportProfiles, resolveExcelExportProfile } from "@/lib/export/excel/registry";
+export { REPORT_TABLE_COLOR_CONFIG, applyReportTableStyles } from "@/lib/export/excel/report-table-styles";
 
 function buildExportContext(scope: ExportScope = {}): ExcelExportContext {
   const workspace = resolveWorkspaceContext({
@@ -39,6 +41,7 @@ function buildExportContext(scope: ExportScope = {}): ExcelExportContext {
 /**
  * Build the Excel statement workbook for a company/version.
  * Uses a company-specific profile when registered; otherwise the shared V-8 fallback.
+ * Global header/total colors are applied for every export.
  * PDF export is intentionally separate and always uses the common renderer.
  */
 export function buildStatementWorkbook(scope?: ExportScope): Buffer {
@@ -51,7 +54,8 @@ export function buildStatementWorkbookExport(scope?: ExportScope): ExcelExportRe
     companyId: context.companyId,
     excelProfileId: context.excelProfileId,
   });
-  const buffer = profile.build(context);
+  const rawBuffer = profile.build(context);
+  const buffer = applyReportTableStylesToWorkbookBuffer(rawBuffer);
   const fileName =
     profile.fileName?.(context) ??
     `${context.companyName.replace(/[^\w.-]+/g, "_")}_${context.financialYear}_Statements.xlsx`;

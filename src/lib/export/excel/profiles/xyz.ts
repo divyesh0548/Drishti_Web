@@ -1,17 +1,46 @@
 import fs from "node:fs";
 import path from "node:path";
-import { read, utils, write, type CellObject, type WorkBook, type WorkSheet } from "xlsx";
+import XLSX from "xlsx-js-style";
 
 import type { ExcelExportContext, ExcelExportProfile } from "@/lib/export/excel/types";
 import { applyXyzPackCellMap } from "@/lib/export/excel/profiles/xyz-pack-map";
 import { getCompanySettings } from "@/lib/company-workspace";
-import type { LedgerRow } from "@/lib/trial-balance";
+
+const { read, utils, write } = XLSX;
+type WorkBook = XLSX.WorkBook;
+type WorkSheet = XLSX.WorkSheet;
+type CellObject = XLSX.CellObject;
 
 const XYZ_COMPANY_ID = "xyz";
 const TEMPLATE_PATH = path.join(process.cwd(), "templates", "excel", "xyz-desired-structure.xlsx");
 
-const CURRENT_TB_SHEET = "TB BVS 31.03.26";
-const PREVIOUS_TB_SHEET = "TB BVS 31.3.25";
+/**
+ * Only these sheets are delivered in the XYZ statement workbook.
+ * TB BVS source sheets are retained because statement and note formulas
+ * depend on them. Master Grouping and other working / tax / draft tabs
+ * remain excluded.
+ */
+const XYZ_SHEETS_TO_KEEP = [
+  "Input",
+  "TB BVS 31.03.26",
+  "TB BVS 31.3.25",
+  "TB BVS 31.3.23",
+  "TB BVS 31.3.22",
+  "BS",
+  "PL",
+  "Cash Flow_FY26",
+  "SOCIE",
+  "PPE- note 3",
+  "BS  Notes  4-19",
+  "PL Notes 20-27",
+  "Note 28-31",
+  "Segment",
+  "FI -32",
+  "Ratios -33",
+  "Note - 34-35",
+  "Note -36",
+  "Note - 40",
+] as const;
 
 function formatFinancialYearLabels(financialYear: string) {
   const match = financialYear.match(/^(\d{4})-(\d{2})$/);
@@ -46,43 +75,12 @@ function setCell(sheet: WorkSheet, address: string, value: string | number) {
   const existing = (sheet[address] ?? {}) as CellObject;
   const next: CellObject = {
     ...existing,
-    v: value,
+    v: typeof value === "number" ? Math.round(value) : value,
     t: typeof value === "number" ? "n" : "s",
   };
   delete next.f;
   delete next.w;
   sheet[address] = next;
-}
-
-function clearFormulaKeepValue(sheet: WorkSheet, address: string, value: number) {
-  setCell(sheet, address, value);
-}
-
-function splitDebitCredit(amount: number) {
-  if (amount >= 0) {
-    return { debit: amount, credit: 0 };
-  }
-
-  return { debit: 0, credit: amount };
-}
-
-function ledgerByGl(rows: LedgerRow[]) {
-  const map = new Map<string, LedgerRow>();
-  rows.forEach((row) => {
-    const key = String(row.glNumber ?? "").trim();
-    if (key) {
-      map.set(key, row);
-    }
-  });
-  return map;
-}
-
-function ensureSheetRange(sheet: WorkSheet, row: number, col: number) {
-  const current = sheet["!ref"] ?? "A1";
-  const range = utils.decode_range(current);
-  range.e.r = Math.max(range.e.r, row);
-  range.e.c = Math.max(range.e.c, col);
-  sheet["!ref"] = utils.encode_range(range);
 }
 
 /** Collapse absurd sparse ranges and drop empty cells created by broken Excel used-ranges. */
@@ -112,6 +110,20 @@ function compactSheet(sheet: WorkSheet | undefined, maxColExclusive = 20) {
     maxCol = Math.max(maxCol, decoded.c);
   }
 
+  if (Array.isArray(sheet["!merges"])) {
+    sheet["!merges"] = sheet["!merges"].filter(
+      (range) => range.e.c < maxColExclusive && range.s.c < maxColExclusive,
+    );
+    for (const range of sheet["!merges"]) {
+      maxRow = Math.max(maxRow, range.e.r);
+      maxCol = Math.max(maxCol, Math.min(range.e.c, maxColExclusive - 1));
+    }
+  }
+
+  if (Array.isArray(sheet["!cols"])) {
+    sheet["!cols"] = sheet["!cols"].slice(0, maxColExclusive);
+  }
+
   sheet["!ref"] = utils.encode_range({
     s: { r: 0, c: 0 },
     e: { r: Math.max(maxRow, 1), c: Math.max(maxCol, 1) },
@@ -120,14 +132,25 @@ function compactSheet(sheet: WorkSheet | undefined, maxColExclusive = 20) {
 
 function compactWorkbook(workbook: WorkBook) {
   const limits: Record<string, number> = {
-    [CURRENT_TB_SHEET]: 16,
-    [PREVIOUS_TB_SHEET]: 16,
-    "TB BVS 31.3.23": 26,
-    "TB BVS 31.3.22": 22,
+    Input: 12,
+    BS: 8,
+    PL: 8,
+    "Cash Flow_FY26": 8,
+    SOCIE: 12,
+    "TB BVS 31.03.26": 32,
+    "TB BVS 31.3.25": 20,
+    "TB BVS 31.3.23": 18,
+    "TB BVS 31.3.22": 16,
     "BS  Notes  4-19": 20,
     "PL Notes 20-27": 22,
-    "IT Computation_FY24": 30,
     "PPE- note 3": 14,
+    "Note 28-31": 20,
+    Segment: 20,
+    "FI -32": 24,
+    "Ratios -33": 20,
+    "Note - 34-35": 20,
+    "Note -36": 20,
+    "Note - 40": 20,
   };
 
   workbook.SheetNames.forEach((name) => {
@@ -135,89 +158,25 @@ function compactWorkbook(workbook: WorkBook) {
   });
 }
 
-function accountClassLabel(row: LedgerRow) {
-  if (row.accountClass === "equity-liability") {
-    return row.derivedBucket.includes("equity") ? "Equity" : "Liabilities";
-  }
-  if (row.accountClass === "asset") {
-    return "Assets";
-  }
-  if (row.accountClass === "income") {
-    return "Income";
-  }
-  if (row.accountClass === "expense") {
-    return "Expenses";
-  }
-  return "Other";
-}
-
-function fillTrialBalanceSheet(sheet: WorkSheet | undefined, rows: LedgerRow[], year: "current" | "previous", title: string, companyName: string) {
-  if (!sheet) {
-    return;
-  }
-
-  setCell(sheet, "A3", companyName);
-  setCell(sheet, "A4", title);
-
-  const byGl = ledgerByGl(rows);
-  const usedGls = new Set<string>();
-  const range = utils.decode_range(sheet["!ref"] ?? "A1");
-  let lastDataRow = 6;
-
-  for (let rowIndex = 6; rowIndex <= range.e.r; rowIndex += 1) {
-    const codeCell = sheet[utils.encode_cell({ r: rowIndex, c: 1 })] as CellObject | undefined;
-    const code = codeCell?.v !== undefined && codeCell?.v !== null ? String(codeCell.v).trim() : "";
-
-    if (!code) {
-      continue;
+/** Drop template review comments (e.g. duplicated author + "R/Off" on PL Notes). */
+function stripCellComments(workbook: WorkBook) {
+  workbook.SheetNames.forEach((name) => {
+    const sheet = workbook.Sheets[name];
+    if (!sheet) {
+      return;
     }
 
-    lastDataRow = rowIndex;
-    usedGls.add(code);
-    const ledger = byGl.get(code);
-    const amount = ledger ? (year === "current" ? ledger.currentYear : ledger.previousYear) : 0;
-    const { debit, credit } = splitDebitCredit(amount);
-    const total = debit + credit;
+    delete (sheet as WorkSheet & { "!comments"?: unknown })["!comments"];
 
-    clearFormulaKeepValue(sheet, utils.encode_cell({ r: rowIndex, c: 6 }), debit);
-    clearFormulaKeepValue(sheet, utils.encode_cell({ r: rowIndex, c: 7 }), credit);
-    clearFormulaKeepValue(sheet, utils.encode_cell({ r: rowIndex, c: 8 }), total);
-
-    if (ledger?.glDescription) {
-      setCell(sheet, utils.encode_cell({ r: rowIndex, c: 5 }), ledger.glDescription);
-    }
-    if (ledger?.noteNumber) {
-      setCell(sheet, utils.encode_cell({ r: rowIndex, c: 2 }), ledger.noteNumber);
-    }
-    if (ledger?.derivedLabel || ledger?.noteTitle) {
-      setCell(sheet, utils.encode_cell({ r: rowIndex, c: 3 }), ledger.derivedLabel || ledger.noteTitle);
-    }
-  }
-
-  // Append portal ledgers that are missing from the template structure.
-  rows
-    .filter((row) => row.glNumber && !usedGls.has(String(row.glNumber).trim()) && row.accountClass !== "opening-balance")
-    .forEach((row) => {
-      lastDataRow += 1;
-      const amount = year === "current" ? row.currentYear : row.previousYear;
-      const { debit, credit } = splitDebitCredit(amount);
-      const values: Array<string | number> = [
-        accountClassLabel(row),
-        row.glNumber,
-        row.noteNumber || "",
-        row.derivedLabel || row.noteTitle || "",
-        row.subgroupLabel || row.derivedLabel || "",
-        row.glDescription,
-        debit,
-        credit,
-        debit + credit,
-      ];
-
-      values.forEach((value, columnIndex) => {
-        setCell(sheet, utils.encode_cell({ r: lastDataRow, c: columnIndex }), value);
+    Object.keys(sheet)
+      .filter((key) => !key.startsWith("!"))
+      .forEach((address) => {
+        const cell = sheet[address] as CellObject & { c?: unknown };
+        if (cell && "c" in cell) {
+          delete cell.c;
+        }
       });
-      ensureSheetRange(sheet, lastDataRow, 8);
-    });
+  });
 }
 
 function updateInputSheet(workbook: WorkBook, context: ExcelExportContext, dates: ReturnType<typeof formatFinancialYearLabels>) {
@@ -233,6 +192,8 @@ function updateInputSheet(workbook: WorkBook, context: ExcelExportContext, dates
   setCell(sheet, "D5", dates.previousStart);
   setCell(sheet, "H4", dates.currentFy);
   setCell(sheet, "H5", dates.previousFy);
+  // Force whole-number presentation (no decimals).
+  setCell(sheet, "E2", 0);
 }
 
 function updateStatementTitles(workbook: WorkBook, dates: ReturnType<typeof formatFinancialYearLabels>, companyName: string) {
@@ -293,34 +254,61 @@ function updateSignatories(workbook: WorkBook, context: ExcelExportContext) {
   }
 }
 
-function updateMasterGrouping(workbook: WorkBook, rows: LedgerRow[]) {
-  const sheet = workbook.Sheets["Master Grouping"];
-  if (!sheet) {
-    return;
-  }
+function keepOnlySheets(workbook: WorkBook, sheetNames: readonly string[]) {
+  const keepOrder = sheetNames.filter((name) => Boolean(workbook.Sheets[name]));
+  const keepSet = new Set(keepOrder);
 
-  const byGl = ledgerByGl(rows);
-  const range = utils.decode_range(sheet["!ref"] ?? "A1");
+  workbook.SheetNames.forEach((name) => {
+    if (!keepSet.has(name)) {
+      delete workbook.Sheets[name];
+    }
+  });
 
-  for (let rowIndex = 1; rowIndex <= range.e.r; rowIndex += 1) {
-    const codeCell = sheet[utils.encode_cell({ r: rowIndex, c: 0 })] as CellObject | undefined;
-    const code = codeCell?.v !== undefined && codeCell?.v !== null ? String(codeCell.v).trim() : "";
-    if (!code) {
-      continue;
+  workbook.SheetNames = [...keepOrder];
+
+  // Drop defined names that pointed at removed working sheets (avoids Excel repair drops).
+  const workbookMeta = workbook as WorkBook & {
+    Workbook?: {
+      Names?: Array<{ Name?: string; Ref?: string; Sheet?: number }>;
+      Sheets?: Array<{ name?: string; Hidden?: number }>;
+      CalcPr?: {
+        calcId: string;
+        fullCalcOnLoad: boolean;
+        forceFullCalc: boolean;
+      };
+    };
+  };
+
+  workbookMeta.Workbook = workbookMeta.Workbook ?? {};
+  // Clear defined names — many point at removed working/TB sheets by index and
+  // cause Excel repair warnings that can hide or drop legitimate note sheets.
+  workbookMeta.Workbook.Names = [];
+
+  // Force remaining tabs visible in a stable order (template hides Input / many workings).
+  workbookMeta.Workbook.Sheets = keepOrder.map((name) => ({ name, Hidden: 0 as const }));
+}
+
+function roundNumericCells(workbook: WorkBook) {
+  const targets = ["BS", "PL", "Cash Flow_FY26", "SOCIE", "BS  Notes  4-19", "PL Notes 20-27", "PPE- note 3", "Input"];
+
+  targets.forEach((name) => {
+    const sheet = workbook.Sheets[name];
+    if (!sheet) {
+      return;
     }
 
-    const ledger = byGl.get(code);
-    if (!ledger) {
-      continue;
-    }
-
-    if (ledger.derivedLabel || ledger.noteTitle) {
-      setCell(sheet, utils.encode_cell({ r: rowIndex, c: 1 }), ledger.derivedLabel || ledger.noteTitle);
-    }
-    if (ledger.subgroupLabel) {
-      setCell(sheet, utils.encode_cell({ r: rowIndex, c: 2 }), ledger.subgroupLabel);
-    }
-  }
+    Object.keys(sheet)
+      .filter((key) => !key.startsWith("!"))
+      .forEach((address) => {
+        const cell = sheet[address] as CellObject | undefined;
+        if (!cell || cell.t !== "n" || typeof cell.v !== "number") {
+          return;
+        }
+        cell.v = Math.round(cell.v);
+        cell.z = "#,##0;(#,##0);-";
+        delete cell.w;
+      });
+  });
 }
 
 function enableFullCalcOnLoad(workbook: WorkBook) {
@@ -349,42 +337,36 @@ export function buildXyzStatementWorkbook(context: ExcelExportContext): Buffer {
 
   const workbook = read(fs.readFileSync(TEMPLATE_PATH), {
     type: "buffer",
-    // Avoid SheetJS style round-trip bloat (template rewrite jumps ~1MB → ~20MB).
+    // Keep template styles off on read to avoid SheetJS sparse-style bloat.
     cellStyles: false,
     cellFormula: true,
   });
 
   const dates = formatFinancialYearLabels(context.financialYear);
-  const rows = context.snapshot.rows;
+
+  // Keep statement sheets first so PPE / BS Notes cannot be lost among working tabs.
+  keepOnlySheets(workbook, XYZ_SHEETS_TO_KEEP);
+
+  const missingRequired = XYZ_SHEETS_TO_KEEP.filter((name) => !workbook.Sheets[name]);
+  if (missingRequired.length > 0) {
+    throw new Error(
+      `XYZ template is missing required sheets: ${missingRequired.join(", ")}. Expected at ${TEMPLATE_PATH}`,
+    );
+  }
 
   updateInputSheet(workbook, context, dates);
   updateStatementTitles(workbook, dates, context.companyName);
   updateSignatories(workbook, context);
-  updateMasterGrouping(workbook, rows);
-
-  fillTrialBalanceSheet(
-    workbook.Sheets[CURRENT_TB_SHEET],
-    rows,
-    "current",
-    `Trial Balance as on ${dates.current}`,
-    context.companyName,
-  );
-  fillTrialBalanceSheet(
-    workbook.Sheets[PREVIOUS_TB_SHEET],
-    rows,
-    "previous",
-    `Trial Balance as on ${dates.previous}`,
-    context.companyName,
-  );
 
   // Option B: push StatementPack totals into mapped XYZ BS/PL/Notes/PPE/Cash Flow cells.
   applyXyzPackCellMap(workbook, context.pack);
 
   compactWorkbook(workbook);
-
+  stripCellComments(workbook);
+  roundNumericCells(workbook);
   enableFullCalcOnLoad(workbook);
 
-  return Buffer.from(write(workbook, { type: "buffer", bookType: "xlsx", cellStyles: false }));
+  return Buffer.from(write(workbook, { type: "buffer", bookType: "xlsx", cellStyles: true }));
 }
 
 /**
