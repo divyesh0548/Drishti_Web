@@ -34,7 +34,6 @@ const XYZ_SHEETS_TO_KEEP = [
   "BS  Notes  4-19",
   "PL Notes 20-27",
   "Note 28-31",
-  "Segment",
   "FI -32",
   "Ratios -33",
   "Note - 34-35",
@@ -145,7 +144,6 @@ function compactWorkbook(workbook: WorkBook) {
     "PL Notes 20-27": 22,
     "PPE- note 3": 14,
     "Note 28-31": 20,
-    Segment: 20,
     "FI -32": 24,
     "Ratios -33": 20,
     "Note - 34-35": 20,
@@ -289,26 +287,46 @@ function keepOnlySheets(workbook: WorkBook, sheetNames: readonly string[]) {
 }
 
 function roundNumericCells(workbook: WorkBook) {
-  const targets = ["BS", "PL", "Cash Flow_FY26", "SOCIE", "BS  Notes  4-19", "PL Notes 20-27", "PPE- note 3", "Input"];
+  const wholeNumberSheets = [
+    "BS",
+    "PL",
+    "Cash Flow_FY26",
+    "SOCIE",
+    "BS  Notes  4-19",
+    "PL Notes 20-27",
+    "PPE- note 3",
+    "Note 28-31",
+    "FI -32",
+    "Note - 34-35",
+    "Note -36",
+    "Note - 40",
+    "Input",
+  ];
+  const twoDecimalSheets = ["Ratios -33"];
 
-  targets.forEach((name) => {
+  const roundSheet = (name: string, decimals: number, numberFormat: string) => {
     const sheet = workbook.Sheets[name];
     if (!sheet) {
       return;
     }
 
+    const factor = 10 ** decimals;
     Object.keys(sheet)
       .filter((key) => !key.startsWith("!"))
       .forEach((address) => {
         const cell = sheet[address] as CellObject | undefined;
-        if (!cell || cell.t !== "n" || typeof cell.v !== "number") {
+        if (!cell || typeof cell.v !== "number" || Number.isNaN(cell.v)) {
           return;
         }
-        cell.v = Math.round(cell.v);
-        cell.z = "#,##0;(#,##0);-";
+        cell.v = Math.round(cell.v * factor) / factor;
+        cell.t = "n";
+        cell.z = numberFormat;
         delete cell.w;
       });
-  });
+  };
+
+  wholeNumberSheets.forEach((name) => roundSheet(name, 0, "#,##0;(#,##0);-"));
+  twoDecimalSheets.forEach((name) => roundSheet(name, 2, "#,##0.00;(#,##0.00);-"));
 }
 
 function enableFullCalcOnLoad(workbook: WorkBook) {

@@ -14,6 +14,7 @@ PDF export does **not** use this system — it stays on the shared common render
 | Profile id | Company ids | Template |
 |------------|-------------|----------|
 | `xyz-desired-structure` | `xyz` | `templates/excel/xyz-desired-structure.xlsx` |
+| `ltel-desired-structure` | `ltel` | `templates/excel/ltel-desired-structure.xlsx` |
 
 ### XYZ Option B data fill
 
@@ -26,18 +27,24 @@ PDF export does **not** use this system — it stays on the shared common render
 
 XYZ exports keep: `Input`, TB BVS dependency sheets, `BS`, `PL`, `Cash Flow_FY26`,
 `SOCIE`, `PPE- note 3`, `BS  Notes  4-19`, `PL Notes 20-27`, and subsequent note
-tabs (`Note 28-31`, `Segment`, `FI -32`, `Ratios -33`, `Note - 34-35`, `Note -36`,
-`Note - 40`). Master Grouping and working / IT / Draft tabs are dropped.
+tabs (`Note 28-31`, `FI -32`, `Ratios -33`, `Note - 34-35`, `Note -36`,
+`Note - 40`). `Segment`, Master Grouping, and working / IT / Draft tabs are dropped.
 
-### Global table colors (all companies)
+### LTEL Option B data fill
 
-`report-table-styles.ts` defines `REPORT_TABLE_COLOR_CONFIG` and is applied in
-`buildStatementWorkbookExport` for **every** Excel export (XYZ + V-8 fallback):
+`profiles/ltel-pack-map.ts` maps pack note totals into LTEL BS / PL / note / CashFlow
+cells (portal note numbers → LTEL face notes). All tabs from
+`ltel-desired-structure.xlsx` are kept (`BS`, `PL`, `SOCE`, `CashFlow`, notes `2`–`27`,
+`Note 28 to 43`).
+
+### Global table colors & column width (all companies)
+
+`report-table-styles.ts` is applied in `buildStatementWorkbookExport` for **every**
+Excel export:
 
 - Header rows: dark blue background + white bold text
 - Total rows: light blue background + bold text
-
-
+- Column auto-width capped at **2 standard cells**; longer text wraps
 
 ## Files
 
@@ -49,4 +56,6 @@ tabs (`Note 28-31`, `Segment`, `FI -32`, `Ratios -33`, `Note - 34-35`, `Note -36
 | `profiles/v8-linked.ts` | Default fallback builder |
 | `profiles/xyz.ts` | XYZ desired structure builder |
 | `profiles/xyz-pack-map.ts` | Pack → XYZ cell map (Option B) |
+| `profiles/ltel.ts` | LTEL desired structure builder |
+| `profiles/ltel-pack-map.ts` | Pack → LTEL cell map (Option B) |
 | `profiles/custom.ts` | Register company-specific profiles |

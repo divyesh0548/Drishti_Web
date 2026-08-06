@@ -1,4 +1,5 @@
 import type { ExcelExportProfile } from "@/lib/export/excel/types";
+import { ltelExcelProfile } from "@/lib/export/excel/profiles/ltel";
 import { xyzExcelProfile } from "@/lib/export/excel/profiles/xyz";
 
 /**
@@ -6,4 +7,4 @@ import { xyzExcelProfile } from "@/lib/export/excel/profiles/xyz";
  * Match by `companyIds` (preferred). `excelProfileId` in settings is optional.
  * Companies with no matching profile use the shared V-8 fallback.
  */
-export const customExcelProfiles: ExcelExportProfile[] = [xyzExcelProfile];
+export const customExcelProfiles: ExcelExportProfile[] = [xyzExcelProfile, ltelExcelProfile];
