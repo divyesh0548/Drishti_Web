@@ -31,6 +31,11 @@ export type ExcelExportProfile = {
   label: string;
   /** When set, these company ids automatically select this profile. */
   companyIds?: string[];
+  /**
+   * When true, apply header/total colors only — skip column autofit and range
+   * clamp so the company template's layout stays intact.
+   */
+  preserveTemplateStyles?: boolean;
   /** Build the company Excel workbook from the shared financial model. */
   build: (context: ExcelExportContext) => Buffer;
   /** Optional download filename factory. */

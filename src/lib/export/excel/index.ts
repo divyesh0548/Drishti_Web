@@ -41,8 +41,9 @@ function buildExportContext(scope: ExportScope = {}): ExcelExportContext {
 /**
  * Build the Excel statement workbook for a company/version.
  * Uses a company-specific profile when registered; otherwise the shared V-8 fallback.
- * Global header/total colors are applied for every export.
- * PDF export is intentionally separate and always uses the common renderer.
+ * Header/total background colors are applied for every company.
+ * Template-copy profiles keep base layout (colors only; no column autofit/clamp).
+ * PDF export stays on the common renderer.
  */
 export function buildStatementWorkbook(scope?: ExportScope): Buffer {
   return buildStatementWorkbookExport(scope).buffer;
@@ -55,7 +56,9 @@ export function buildStatementWorkbookExport(scope?: ExportScope): ExcelExportRe
     excelProfileId: context.excelProfileId,
   });
   const rawBuffer = profile.build(context);
-  const buffer = applyReportTableStylesToWorkbookBuffer(rawBuffer);
+  const buffer = applyReportTableStylesToWorkbookBuffer(rawBuffer, {
+    colorsOnly: Boolean(profile.preserveTemplateStyles),
+  });
   const fileName =
     profile.fileName?.(context) ??
     `${context.companyName.replace(/[^\w.-]+/g, "_")}_${context.financialYear}_Statements.xlsx`;

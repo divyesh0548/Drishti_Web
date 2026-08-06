@@ -16,35 +16,32 @@ PDF export does **not** use this system — it stays on the shared common render
 | `xyz-desired-structure` | `xyz` | `templates/excel/xyz-desired-structure.xlsx` |
 | `ltel-desired-structure` | `ltel` | `templates/excel/ltel-desired-structure.xlsx` |
 
-### XYZ Option B data fill
+### Template-copy fill (XYZ + LTEL)
 
-`profiles/xyz-pack-map.ts` maps `StatementPack` note totals into XYZ template cells:
+These profiles **copy the base workbook** and only:
 
-- BS / PL face amounts (whole numbers, no decimals)
-- `BS  Notes  4-19` / `PL Notes 20-27` total cells
-- `PPE- note 3` carrying value + depreciation
-- Cash Flow net section totals
+1. Substitute **dates / years** (and company name) inside existing text cells
+2. Write **calculated StatementPack amounts** into mapped numeric cells
 
-XYZ exports keep: `Input`, TB BVS dependency sheets, `BS`, `PL`, `Cash Flow_FY26`,
-`SOCIE`, `PPE- note 3`, `BS  Notes  4-19`, `PL Notes 20-27`, and subsequent note
-tabs (`Note 28-31`, `FI -32`, `Ratios -33`, `Note - 34-35`, `Note -36`,
-`Note - 40`). `Segment`, Master Grouping, and working / IT / Draft tabs are dropped.
+All other wording, layout, and merges stay from the base file.
+Header/total **background colors** are still applied for every company
+(`colorsOnly` for template profiles — no column autofit/clamp).
 
-### LTEL Option B data fill
+Shared helpers live in `template-fill.ts`. Pack maps:
 
-`profiles/ltel-pack-map.ts` maps pack note totals into LTEL BS / PL / note / CashFlow
-cells (portal note numbers → LTEL face notes). All tabs from
-`ltel-desired-structure.xlsx` are kept (`BS`, `PL`, `SOCE`, `CashFlow`, notes `2`–`27`,
-`Note 28 to 43`).
+- `profiles/xyz-pack-map.ts`
+- `profiles/ltel-pack-map.ts`
 
-### Global table colors & column width (all companies)
+XYZ still drops non-statement tabs (Master Grouping, working / IT / Draft). LTEL keeps
+every tab from its desired-structure file.
 
-`report-table-styles.ts` is applied in `buildStatementWorkbookExport` for **every**
-Excel export:
+### Global table colors & column width
+
+`report-table-styles.ts` runs for **every** Excel export:
 
 - Header rows: dark blue background + white bold text
 - Total rows: light blue background + bold text
-- Column auto-width capped at **2 standard cells**; longer text wraps
+- Column auto-width (V-8 only) capped at **2 standard cells**; longer text wraps
 
 ## Files
 
@@ -53,9 +50,10 @@ Excel export:
 | `types.ts` | Profile + context contracts |
 | `registry.ts` | Resolve profile for a company |
 | `index.ts` | `buildStatementWorkbook` entry |
+| `template-fill.ts` | Date/year text substitution + calc-on-load |
 | `profiles/v8-linked.ts` | Default fallback builder |
-| `profiles/xyz.ts` | XYZ desired structure builder |
-| `profiles/xyz-pack-map.ts` | Pack → XYZ cell map (Option B) |
-| `profiles/ltel.ts` | LTEL desired structure builder |
-| `profiles/ltel-pack-map.ts` | Pack → LTEL cell map (Option B) |
+| `profiles/xyz.ts` | XYZ template-copy builder |
+| `profiles/xyz-pack-map.ts` | Pack → XYZ cell map |
+| `profiles/ltel.ts` | LTEL template-copy builder |
+| `profiles/ltel-pack-map.ts` | Pack → LTEL cell map |
 | `profiles/custom.ts` | Register company-specific profiles |

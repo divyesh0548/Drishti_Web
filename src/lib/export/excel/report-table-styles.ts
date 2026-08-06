@@ -410,7 +410,10 @@ function styleHeaderBand(
   }
 }
 
-export function styleStatementSheet(sheet: WorkSheet | undefined) {
+export function styleStatementSheet(
+  sheet: WorkSheet | undefined,
+  options: { autoFit?: boolean } = {},
+) {
   if (!sheet?.["!ref"]) {
     return;
   }
@@ -447,7 +450,9 @@ export function styleStatementSheet(sheet: WorkSheet | undefined) {
     }
   }
 
-  autoFitSheetColumns(sheet);
+  if (options.autoFit !== false) {
+    autoFitSheetColumns(sheet);
+  }
 }
 
 /**
@@ -456,10 +461,13 @@ export function styleStatementSheet(sheet: WorkSheet | undefined) {
 export function applyReportTableStyles(
   workbook: WorkBook,
   sheetNames: readonly string[] = DEFAULT_STATEMENT_SHEETS,
+  options: { autoFit?: boolean } = {},
 ) {
+  const autoFit = options.autoFit !== false;
+
   sheetNames.forEach((name) => {
     if (workbook.Sheets[name]) {
-      styleStatementSheet(workbook.Sheets[name]);
+      styleStatementSheet(workbook.Sheets[name], { autoFit });
     }
   });
 
@@ -472,37 +480,47 @@ export function applyReportTableStyles(
       /^(bs|pl|socie?|cash\s*flow|ppe|notes?|fi|ratios)/i.test(name.trim()) ||
       /^\d/.test(name.trim())
     ) {
-      styleStatementSheet(workbook.Sheets[name]);
+      styleStatementSheet(workbook.Sheets[name], { autoFit });
     }
   });
 }
 
 /**
- * Re-open a generated workbook buffer, apply global table colors, and return a new buffer.
- * Called once for every Excel report export (all profiles).
+ * Re-open a generated workbook buffer, apply header/total colors, and return a new buffer.
+ * Called for every Excel report export (all profiles).
+ *
+ * `colorsOnly`: paint header/total fills only — skip column autofit and range clamp
+ * so template-copy profiles keep the base file layout.
  */
-export function applyReportTableStylesToWorkbookBuffer(buffer: Buffer): Buffer {
+export function applyReportTableStylesToWorkbookBuffer(
+  buffer: Buffer,
+  options: { colorsOnly?: boolean } = {},
+): Buffer {
   const workbook = read(buffer, {
     type: "buffer",
     cellStyles: true,
     cellFormula: true,
   });
 
-  applyReportTableStyles(workbook);
-  // Autofit any remaining kept sheets (e.g. Input / TB) that skip color styling.
-  workbook.SheetNames.forEach((name) => {
-    if (DEFAULT_STATEMENT_SHEETS.includes(name as (typeof DEFAULT_STATEMENT_SHEETS)[number])) {
-      return;
-    }
-    if (
-      /^(bs|pl|socie?|cash\s*flow|ppe|notes?|fi|ratios)/i.test(name.trim()) ||
-      /^\d/.test(name.trim())
-    ) {
-      return;
-    }
-    autoFitSheetColumns(workbook.Sheets[name]);
-  });
-  clampWorkbookUsedRanges(workbook);
+  const colorsOnly = Boolean(options.colorsOnly);
+  applyReportTableStyles(workbook, DEFAULT_STATEMENT_SHEETS, { autoFit: !colorsOnly });
+
+  if (!colorsOnly) {
+    // Autofit any remaining kept sheets (e.g. Input / TB) that skip color styling.
+    workbook.SheetNames.forEach((name) => {
+      if (DEFAULT_STATEMENT_SHEETS.includes(name as (typeof DEFAULT_STATEMENT_SHEETS)[number])) {
+        return;
+      }
+      if (
+        /^(bs|pl|socie?|cash\s*flow|ppe|notes?|fi|ratios)/i.test(name.trim()) ||
+        /^\d/.test(name.trim())
+      ) {
+        return;
+      }
+      autoFitSheetColumns(workbook.Sheets[name]);
+    });
+    clampWorkbookUsedRanges(workbook);
+  }
 
   return Buffer.from(
     write(workbook, {
