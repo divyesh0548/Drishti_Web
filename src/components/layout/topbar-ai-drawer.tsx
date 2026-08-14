@@ -22,7 +22,7 @@ const knowledgeBase: KnowledgeEntry[] = [
   {
     question: "What can you help me with?",
     answer: (workspace) =>
-      `I can help with trial balance imports, mapping review, fixed assets, statement outputs, and report checks for ${workspace?.company.name ?? "your workspace"}.`,
+      `I can help with trial balance imports, mapping review, fixed assets, statement outputs, and report checks for ${workspace?.company?.name ?? "your workspace"}.`,
     tags: ["help", "support", "what", "can", "you", "do"],
   },
   {
@@ -58,9 +58,9 @@ const knowledgeBase: KnowledgeEntry[] = [
   {
     question: "What is the active company and version?",
     answer: (workspace) =>
-      workspace
+      workspace?.company && workspace.currentVersion
         ? `${workspace.company.name} is currently selected with ${workspace.currentVersion.label} for financial year ${workspace.currentVersion.financialYear}.`
-        : "The current company and version will appear here once the workspace context loads.",
+        : "The current company and version will appear here once a company workspace is available.",
     tags: ["company", "version", "financial", "year", "active"],
   },
 ];
@@ -94,6 +94,12 @@ function findBestReply(input: string) {
 function buildWelcomeMessage(workspace: WorkspaceContextPayload | null) {
   if (!workspace) {
     return "Ask about imports, mapping, statements, reports, or fixed assets. I will reply using the built-in guidance available in the portal.";
+  }
+
+  if (!workspace.company || !workspace.currentVersion) {
+    return workspace.company
+      ? "Ask about imports, mapping, statements, reports, or fixed assets. Upload a trial balance in Imports to create the first version."
+      : "Ask about imports, mapping, statements, reports, or fixed assets. Create a company from Administration to load a workspace.";
   }
 
   return `Ask about ${workspace.company.name}, ${workspace.currentVersion.label}, imports, mapping, reports, or fixed assets. I will reply using the built-in guidance available in the portal.`;

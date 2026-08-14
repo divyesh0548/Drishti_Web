@@ -2,11 +2,11 @@
 
 import { useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
 
 import { StatusPill } from "@/components/portal/cards";
 import { PortalButton } from "@/components/ui/portal-button";
 import { PortalSelect } from "@/components/ui/portal-select";
+import { usePortalSnackbar } from "@/components/ui/portal-snackbar";
 import type { LedgerGroupingOption, LedgerGroupingOverride, LedgerSubgroupOption } from "@/lib/ledger-groupings";
 import type { LedgerRow } from "@/lib/trial-balance";
 import { formatCurrency } from "@/lib/utils";
@@ -77,11 +77,12 @@ export function GroupingManager({
   options: LedgerGroupingOption[];
   subgroupOptions: LedgerSubgroupOption[];
   savedOverrides: LedgerGroupingOverride[];
-  companyId: string;
+  companyId: number;
   versionId: string;
   canEdit: boolean;
 }) {
   const router = useRouter();
+  const { showSuccess, showError } = usePortalSnackbar();
   const [search, setSearch] = useState("");
   const [mappingFilter, setMappingFilter] = useState<MappingFilter>("all");
   const [groupFilter, setGroupFilter] = useState("all");
@@ -181,10 +182,10 @@ export function GroupingManager({
           throw new Error(payload.error ?? "Unable to save ledger grouping.");
         }
 
-        toast.success(`Saved grouping for GL ${row.glNumber || row.glDescription}.`);
+        showSuccess(`Saved grouping for GL ${row.glNumber || row.glDescription}.`);
         router.refresh();
       } catch (saveError) {
-        toast.error(saveError instanceof Error ? saveError.message : "Unable to save ledger grouping.");
+        showError(saveError instanceof Error ? saveError.message : "Unable to save ledger grouping.");
       }
     });
   };
@@ -214,10 +215,10 @@ export function GroupingManager({
           },
         }));
 
-        toast.success(`Removed saved grouping for GL ${row.glNumber || row.glDescription}.`);
+        showSuccess(`Removed saved grouping for GL ${row.glNumber || row.glDescription}.`);
         router.refresh();
       } catch (deleteError) {
-        toast.error(deleteError instanceof Error ? deleteError.message : "Unable to clear ledger grouping.");
+        showError(deleteError instanceof Error ? deleteError.message : "Unable to clear ledger grouping.");
       }
     });
   };

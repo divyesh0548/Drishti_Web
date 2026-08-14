@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { requireRequestWorkspaceContext } from "@/lib/auth";
+import { requireRequestWorkspaceCompany } from "@/lib/auth";
 import { createCompanyUser, listCompanyUsers, type WorkspaceUserRole } from "@/lib/company-workspace";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const companyId = searchParams.get("companyId");
 
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceCompany(request, {
     companyId: companyId ?? undefined,
   });
 
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    users: listCompanyUsers(context.company.id),
+    users: await listCompanyUsers(context.company.id),
   });
 }
 
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "companyId, name, email, and a company role are required." }, { status: 400 });
   }
 
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceCompany(request, {
     companyId: body.companyId,
   });
 
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const user = createCompanyUser({
+    const user = await createCompanyUser({
       companyId: context.company.id,
       name: body.name,
       email: body.email,

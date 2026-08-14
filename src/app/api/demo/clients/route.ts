@@ -1,8 +1,10 @@
+import { loadCompaniesFromDb } from "@/lib/company-workspace";
 import { getTrialBalanceSnapshot } from "@/lib/trial-balance";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const snapshot = getTrialBalanceSnapshot();
+  await loadCompaniesFromDb();
+  const snapshot = await getTrialBalanceSnapshot();
 
   return NextResponse.json({
     source: {

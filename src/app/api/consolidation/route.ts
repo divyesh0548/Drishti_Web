@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRequestWorkspaceContext } from "@/lib/auth";
+import { parseCompanyId } from "@/lib/company-id";
 import { buildConsolidationSnapshot, getConsolidationConfig, saveConsolidationConfig } from "@/lib/consolidation";
 import { getWorkspaceSelection } from "@/lib/portal-context";
 
@@ -19,7 +20,7 @@ function toNumber(value: number | string | undefined) {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const context = requireRequestWorkspaceContext(request, getWorkspaceSelection(searchParams));
+  const context = await requireRequestWorkspaceContext(request, getWorkspaceSelection(searchParams));
 
   if (!context) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
   return NextResponse.json(
     {
       config: getConsolidationConfig(scope),
-      snapshot: buildConsolidationSnapshot(scope),
+      snapshot: await buildConsolidationSnapshot(scope),
     },
     {
       headers: {
@@ -45,13 +46,13 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   const body = (await request.json()) as {
-    companyId?: string;
+    companyId?: string | number;
     versionId?: string;
-    members?: Array<{ companyId?: string; versionId?: string }>;
+    members?: Array<{ companyId?: string | number; versionId?: string }>;
     eliminations?: Array<{
       id?: string;
-      fromCompanyId?: string;
-      toCompanyId?: string;
+      fromCompanyId?: string | number;
+      toCompanyId?: string | number;
       description?: string;
       statementArea?: string;
       noteNumber?: string;
@@ -63,7 +64,7 @@ export async function PUT(request: Request) {
     }>;
   };
 
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceContext(request, {
     companyId: body.companyId,
     versionId: body.versionId,
   });
@@ -83,11 +84,14 @@ export async function PUT(request: Request) {
 
   const config = saveConsolidationConfig(
     {
-      members: (body.members ?? []).flatMap((member) => (member.companyId ? [{ companyId: member.companyId, versionId: member.versionId }] : [])),
+      members: (body.members ?? []).flatMap((member) => {
+        const companyId = parseCompanyId(member.companyId);
+        return companyId ? [{ companyId, versionId: member.versionId }] : [];
+      }),
       eliminations: (body.eliminations ?? []).map((entry) => ({
         id: entry.id,
-        fromCompanyId: entry.fromCompanyId,
-        toCompanyId: entry.toCompanyId,
+        fromCompanyId: parseCompanyId(entry.fromCompanyId),
+        toCompanyId: parseCompanyId(entry.toCompanyId),
         description: entry.description,
         statementArea: entry.statementArea === "profit-and-loss" ? "profit-and-loss" : "balance-sheet",
         noteNumber: entry.noteNumber,
@@ -103,6 +107,6 @@ export async function PUT(request: Request) {
 
   return NextResponse.json({
     config,
-    snapshot: buildConsolidationSnapshot(scope),
+    snapshot: await buildConsolidationSnapshot(scope),
   });
 }

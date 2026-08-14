@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { StatusPill } from "@/components/portal/cards";
 import { PortalButton } from "@/components/ui/portal-button";
+import { usePortalSnackbar } from "@/components/ui/portal-snackbar";
 import { formatCurrency } from "@/lib/utils";
 import type { FixedAssetLine, FixedAssetStore } from "@/lib/fixed-assets";
 import { Bot, Calculator, FileSpreadsheet, GitCompareArrows, Link2, Package2, ShieldCheck } from "lucide-react";
@@ -118,16 +119,15 @@ export function FixedAssetManager({
   canEdit,
   store,
 }: {
-  companyId: string;
+  companyId: number;
   versionId: string;
   canEdit: boolean;
   store: FixedAssetStore;
 }) {
   const router = useRouter();
+  const { showSuccess, showError } = usePortalSnackbar();
   const [activeTab, setActiveTab] = useState<FixedAssetTab>("register");
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
 
   const ppeTotal = useMemo(() => sumLines(store.schedules.ppe), [store.schedules.ppe]);
@@ -142,16 +142,13 @@ export function FixedAssetManager({
 
   const uploadRegister = () => {
     if (!file) {
-      setError("Select a fixed asset register before uploading.");
+      showError("Select a fixed asset register before uploading.");
       return;
     }
 
-    setMessage(null);
-    setError(null);
-
     startTransition(async () => {
       const formData = new FormData();
-      formData.set("companyId", companyId);
+      formData.set("companyId", String(companyId));
       formData.set("versionId", versionId);
       formData.set("file", file);
 
@@ -162,11 +159,11 @@ export function FixedAssetManager({
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        setError(payload.error ?? "Unable to upload the fixed asset register.");
+        showError(payload.error ?? "Unable to upload the fixed asset register.");
         return;
       }
 
-      setMessage("Fixed asset register uploaded and perpetual depreciation schedules refreshed.");
+      showSuccess("Fixed asset register uploaded and perpetual depreciation schedules refreshed.");
       setFile(null);
       router.refresh();
     });
@@ -193,9 +190,6 @@ export function FixedAssetManager({
           </PortalButton>
         ))}
       </div>
-
-      {message ? <div className="rounded-[1.2rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/12 dark:text-emerald-300">{message}</div> : null}
-      {error ? <div className="rounded-[1.2rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/12 dark:text-rose-300">{error}</div> : null}
 
       {activeTab === "register" ? (
         <div className="space-y-6">

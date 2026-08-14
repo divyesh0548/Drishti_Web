@@ -11,7 +11,7 @@ export default async function ClientsPage({
 }) {
   const context = await resolveWorkspaceContextFromSearchParams(searchParams ? await searchParams : undefined);
   assertRouteAccess(context.currentUser.role, "/clients");
-  const snapshot = getTrialBalanceSnapshot({
+  const snapshot = await getTrialBalanceSnapshot({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
   });

@@ -143,12 +143,12 @@ export function buildXyzStatementWorkbook(context: ExcelExportContext): Buffer {
 
 /**
  * XYZ company Excel layout.
- * Selected automatically for company id `xyz` — no excelProfileId required.
+ * Selected automatically for company slug `xyz` — no excelProfileId required.
  */
 export const xyzExcelProfile: ExcelExportProfile = {
   id: "xyz-desired-structure",
   label: "XYZ desired statement workbook",
-  companyIds: [XYZ_COMPANY_ID],
+  companySlugs: [XYZ_COMPANY_ID],
   preserveTemplateStyles: true,
   build: buildXyzStatementWorkbook,
   fileName: (context) => {

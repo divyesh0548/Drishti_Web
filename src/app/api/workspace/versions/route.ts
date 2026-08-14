@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { requireRequestWorkspaceContext } from "@/lib/auth";
+import { requireRequestWorkspaceCompany } from "@/lib/auth";
 import { createCompanyVersionFromFormData, listCompanyVersions } from "@/lib/company-workspace";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const companyId = searchParams.get("companyId");
 
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceCompany(request, {
     companyId: companyId ?? undefined,
   });
 
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "companyId is required." }, { status: 400 });
   }
 
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceCompany(request, {
     companyId,
   });
 
@@ -55,6 +55,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ version });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to upload trial balance.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const status = message.toLowerCase().includes("database") ? 500 : 400;
+    return NextResponse.json({ error: message }, { status });
   }
 }

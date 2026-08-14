@@ -7,13 +7,13 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const selection = getWorkspaceSelection(searchParams);
-  const context = requireRequestWorkspaceContext(request, selection);
+  const context = await requireRequestWorkspaceContext(request, selection);
 
   if (!context) {
     return Response.json({ error: "Authentication required." }, { status: 401 });
   }
 
-  const { buffer, fileName } = buildStatementWorkbookExport({
+  const { buffer, fileName } = await buildStatementWorkbookExport({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
   });

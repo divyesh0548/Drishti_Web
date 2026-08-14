@@ -1,23 +1,29 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import type { Route } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import {
   authenticateWorkspaceUser,
+  changeAuthenticatedUserPassword,
   getWorkspaceUserById,
   resetWorkspaceUserPassword,
+  resolveAuthenticatedWorkspaceContext,
   resolveWorkspaceContext,
+  type ActiveWorkspaceContext,
+  type CompanyWorkspaceContext,
   type WorkspaceContext,
   type WorkspaceUser,
 } from "@/lib/company-workspace";
+import { canAccessRoute } from "@/lib/navigation";
 
 export type AuthSession = {
   userId: string;
 };
 
 export type AuthSelection = {
-  companyId?: string;
+  companyId?: string | number;
   versionId?: string;
 };
 
@@ -110,7 +116,7 @@ export async function getAuthenticatedUser() {
     return null;
   }
 
-  const user = getWorkspaceUserById(session.userId);
+  const user = await getWorkspaceUserById(session.userId);
   return user?.isActive ? user : null;
 }
 
@@ -124,14 +130,20 @@ export async function requireAuthenticatedUser() {
   return user;
 }
 
-export function resolveWorkspaceContextForUser(user: WorkspaceUser, selection?: AuthSelection): WorkspaceContext {
-  const companyId = user.role === "SITE_ADMIN" ? selection?.companyId : user.companyId;
-
-  return resolveWorkspaceContext({
-    companyId,
-    userId: user.id,
+export async function resolveWorkspaceContextForUser(user: WorkspaceUser, selection?: AuthSelection): Promise<WorkspaceContext> {
+  return resolveAuthenticatedWorkspaceContext({
+    user,
+    companyId: selection?.companyId,
     versionId: selection?.versionId,
   });
+}
+
+function isActiveWorkspaceContext(context: WorkspaceContext): context is ActiveWorkspaceContext {
+  return Boolean(context.company && context.currentVersion);
+}
+
+function isCompanyWorkspaceContext(context: WorkspaceContext): context is CompanyWorkspaceContext {
+  return Boolean(context.company);
 }
 
 export async function requireWorkspaceContext(selection?: AuthSelection) {
@@ -139,31 +151,83 @@ export async function requireWorkspaceContext(selection?: AuthSelection) {
   return resolveWorkspaceContextForUser(user, selection);
 }
 
-export function requireRequestUser(request: Request) {
+export async function requireRequestUser(request: Request) {
   const session = getRequestSession(request);
 
   if (!session) {
     return null;
   }
 
-  const user = getWorkspaceUserById(session.userId);
+  const user = await getWorkspaceUserById(session.userId);
   return user?.isActive ? user : null;
 }
 
-export function requireRequestWorkspaceContext(request: Request, selection?: AuthSelection) {
-  const user = requireRequestUser(request);
+export async function requireRequestWorkspaceContext(request: Request, selection?: AuthSelection) {
+  const user = await requireRequestUser(request);
 
-  if (!user) {
+  if (!user || user.tempLogin) {
+    return null;
+  }
+
+  const context = await resolveWorkspaceContextForUser(user, selection);
+  return isActiveWorkspaceContext(context) ? context : null;
+}
+
+export async function requireRequestWorkspaceCompany(request: Request, selection?: AuthSelection) {
+  const user = await requireRequestUser(request);
+
+  if (!user || user.tempLogin) {
+    return null;
+  }
+
+  const context = await resolveWorkspaceContextForUser(user, selection);
+  return isCompanyWorkspaceContext(context) ? context : null;
+}
+
+export async function requireRequestWorkspaceState(request: Request, selection?: AuthSelection) {
+  const user = await requireRequestUser(request);
+
+  if (!user || user.tempLogin) {
     return null;
   }
 
   return resolveWorkspaceContextForUser(user, selection);
 }
 
-export function attemptLogin(email: string, password: string) {
+export function postAuthenticationPath(user: WorkspaceUser): Route {
+  if (user.tempLogin) {
+    return "/change-password" as Route;
+  }
+
+  if (user.role === "SITE_ADMIN") {
+    return "/admin";
+  }
+
+  if (!user.companyId) {
+    return "/dashboard";
+  }
+
+  if (canAccessRoute(user.role, "/import-center")) {
+    return `/import-center?company=${user.companyId}` as Route;
+  }
+
+  return `/dashboard?company=${user.companyId}` as Route;
+}
+
+export async function attemptLogin(email: string, password: string) {
   return authenticateWorkspaceUser(email, password);
 }
 
-export function resetPasswordForWorkspaceUser(email: string, password: string) {
+export async function resetPasswordForWorkspaceUser(email: string, password: string) {
   return resetWorkspaceUserPassword(email, password);
 }
+
+export async function changePasswordForAuthenticatedUser(input: {
+  userId: string;
+  currentPassword: string;
+  nextPassword: string;
+}) {
+  return changeAuthenticatedUserPassword(input);
+}
+
+export { resolveWorkspaceContext };

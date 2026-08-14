@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "New password and confirm password must match." }, { status: 400 });
   }
 
-  const user = resetPasswordForWorkspaceUser(email, password);
+  const user = await resetPasswordForWorkspaceUser(email, password);
 
   if (!user) {
     return NextResponse.json({ error: "No active account was found for this email." }, { status: 404 });

@@ -1,13 +1,13 @@
-import { getTrialBalanceSourceForVersion, resolveWorkspaceContext } from "@/lib/company-workspace";
+import { requireActiveCompany, resolveWorkspaceContext } from "@/lib/company-workspace";
+import { loadTrialBalanceSourceFromDb } from "@/lib/trial-balance-database";
 import {
   type GroupingScope,
-  getGroupingStorePath,
   getLedgerGroupingOverrides,
+  getLedgerGroupingOverrideStamp,
   getMasterGroupingForLedger,
-  getMasterGroupingSourcePath,
+  getMasterGroupingStamp,
   getSuggestedGroupingForLedger,
 } from "@/lib/ledger-groupings";
-import fs from "node:fs";
 
 export type LedgerRow = {
   financialStatementItem: string;
@@ -233,7 +233,7 @@ const taxKeywords = ["tax expense", "income tax", "deferred tax", "mat", "curren
 
 const cachedSnapshot: Record<
   string,
-  { sourceVersion: number; overrideVersion: number; masterGroupingVersion: number; snapshot: DerivedSnapshot }
+  { sourceVersion: string; overrideVersion: string; masterGroupingVersion: string; snapshot: DerivedSnapshot }
 > = {};
 
 function hasKeyword(text: string, keywords: string[]) {
@@ -462,21 +462,27 @@ function pushIfValue(lines: StatementLine[], label: string, current: number, pre
   lines.push({ label, current, previous });
 }
 
-export function getTrialBalanceSnapshot(scope?: GroupingScope) {
+export async function getTrialBalanceSnapshot(scope?: GroupingScope) {
   const resolvedScope =
     scope?.companyId && scope?.versionId
       ? scope
       : {
-          companyId: resolveWorkspaceContext().company.id,
-          versionId: resolveWorkspaceContext().currentVersion.id,
+          companyId: requireActiveCompany(resolveWorkspaceContext()).company.id,
+          versionId: requireActiveCompany(resolveWorkspaceContext()).currentVersion.id,
         };
-  const sourceData = getTrialBalanceSourceForVersion(resolvedScope.companyId!, resolvedScope.versionId!);
+  const sourceData = await loadTrialBalanceSourceFromDb(resolvedScope.companyId!, resolvedScope.versionId!);
+  if (!sourceData) {
+    throw new Error("No trial balance found in the database for this company version. Re-upload the trial balance.");
+  }
   const sourceModifiedAt = new Date(sourceData.lastModifiedIso);
-  const sourceVersion = sourceModifiedAt.getTime();
-  const groupingStorePath = getGroupingStorePath(resolvedScope);
-  const overrideVersion = fs.existsSync(groupingStorePath) ? fs.statSync(groupingStorePath).mtimeMs : 0;
-  const masterGroupingSourcePath = getMasterGroupingSourcePath(resolvedScope);
-  const masterGroupingVersion = fs.existsSync(masterGroupingSourcePath) ? fs.statSync(masterGroupingSourcePath).mtimeMs : 0;
+  const sourceVersion = `${sourceData.lastModifiedIso}:${sourceData.rows.length}:${sourceData.rows
+    .map((row) => `${row["GL Number"]}:${row["Current Year"]}:${row["Previous Year"]}`)
+    .join("|")}`;
+  const [overrideVersion, masterGroupingVersion, overrides] = await Promise.all([
+    getLedgerGroupingOverrideStamp(resolvedScope),
+    getMasterGroupingStamp(),
+    getLedgerGroupingOverrides(resolvedScope),
+  ]);
   const cacheKey = `${resolvedScope.companyId}:${resolvedScope.versionId}`;
 
   if (
@@ -488,8 +494,8 @@ export function getTrialBalanceSnapshot(scope?: GroupingScope) {
     return cachedSnapshot[cacheKey].snapshot;
   }
 
-  const overrides = getLedgerGroupingOverrides(resolvedScope);
-  const rows: LedgerRow[] = sourceData.rows.filter(hasMeaningfulLedgerSourceRow).map((row) => {
+  const rows: LedgerRow[] = [];
+  for (const row of sourceData.rows.filter(hasMeaningfulLedgerSourceRow)) {
     const financialStatementItem = String(row["Financial Statement Item"] ?? "").trim();
     const glNumber = String(row["GL Number"] ?? "").trim();
     const glDescription = String(row["GL Description"] ?? "").trim();
@@ -497,8 +503,8 @@ export function getTrialBalanceSnapshot(scope?: GroupingScope) {
     const previousYear = toNumber(row["Previous Year"]);
     const savedOverride = overrides[glNumber];
     const inferredClassification = classifyRow(glNumber, glDescription, currentYear, previousYear);
-    const workbookGrouping = getMasterGroupingForLedger(glNumber, glDescription, resolvedScope);
-    const suggestedGrouping = getSuggestedGroupingForLedger({
+    const workbookGrouping = await getMasterGroupingForLedger(glNumber, glDescription, resolvedScope);
+    const suggestedGrouping = await getSuggestedGroupingForLedger({
       glNumber,
       glDescription,
       bucket: inferredClassification.derivedBucket,
@@ -548,7 +554,7 @@ export function getTrialBalanceSnapshot(scope?: GroupingScope) {
               noteTitle: "",
             };
 
-    return {
+    rows.push({
       financialStatementItem,
       glNumber,
       glDescription,
@@ -557,8 +563,8 @@ export function getTrialBalanceSnapshot(scope?: GroupingScope) {
       ...classification,
       isManualGrouping: Boolean(savedOverride),
       groupingNotes: savedOverride?.notes ?? "",
-    };
-  });
+    });
+  }
 
   const balanceDifferenceCurrent = rows.reduce((sum, row) => sum + row.currentYear, 0);
   const balanceDifferencePrevious = rows.reduce((sum, row) => sum + row.previousYear, 0);
@@ -915,4 +921,4 @@ export function getTrialBalanceSnapshot(scope?: GroupingScope) {
   return snapshot;
 }
 
-export type TrialBalanceSnapshot = ReturnType<typeof getTrialBalanceSnapshot>;
+export type TrialBalanceSnapshot = Awaited<ReturnType<typeof getTrialBalanceSnapshot>>;

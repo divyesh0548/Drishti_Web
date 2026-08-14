@@ -14,8 +14,8 @@ export default async function StatementsPage({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
   };
-  const model = buildV8FinancialModel(scope);
-  const initialSheet = getV8WorkbookSheet(model.sheets[1]?.name ?? model.sheets[0]?.name ?? "README", scope);
+  const model = await buildV8FinancialModel(scope);
+  const initialSheet = await getV8WorkbookSheet(model.sheets[1]?.name ?? model.sheets[0]?.name ?? "README", scope);
 
   if (!initialSheet) {
     return null;

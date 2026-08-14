@@ -9,6 +9,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 
 import { StatusPill } from "@/components/portal/cards";
 import { PortalButton } from "@/components/ui/portal-button";
+import { usePortalSnackbar } from "@/components/ui/portal-snackbar";
 import type { AgeingGroup, AgeingKind, AgeingStore, AgeingSummary } from "@/lib/ageing";
 
 function emptyGroup(): AgeingGroup {
@@ -107,7 +108,7 @@ export function AgeingManager({
   receivables,
   payables,
 }: {
-  companyId: string;
+  companyId: number;
   versionId: string;
   canEdit: boolean;
   store: AgeingStore;
@@ -115,9 +116,8 @@ export function AgeingManager({
   payables: { normal: AgeingSummary; msme: AgeingSummary };
 }) {
   const router = useRouter();
+  const { showSuccess, showError } = usePortalSnackbar();
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [asOfDate, setAsOfDate] = useState(store.asOfDate);
   const [ageGroups, setAgeGroups] = useState<AgeingGroup[]>(store.ageGroups);
   const [files, setFiles] = useState<Record<AgeingKind, File | null>>({
@@ -127,16 +127,13 @@ export function AgeingManager({
 
   const uploadLedgerFile = (kind: AgeingKind) => {
     if (!files[kind]) {
-      setError(`Select a ${kind} file before uploading.`);
+      showError(`Select a ${kind} file before uploading.`);
       return;
     }
 
-    setMessage(null);
-    setError(null);
-
     startTransition(async () => {
       const formData = new FormData();
-      formData.set("companyId", companyId);
+      formData.set("companyId", String(companyId));
       formData.set("versionId", versionId);
       formData.set("kind", kind);
       formData.set("file", files[kind]!);
@@ -148,20 +145,17 @@ export function AgeingManager({
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        setError(payload.error ?? "Unable to upload ageing file.");
+        showError(payload.error ?? "Unable to upload ageing file.");
         return;
       }
 
-      setMessage(`${kind === "receivables" ? "Trade receivables" : "Trade payables"} file uploaded.`);
+      showSuccess(`${kind === "receivables" ? "Trade receivables" : "Trade payables"} file uploaded.`);
       setFiles((current) => ({ ...current, [kind]: null }));
       router.refresh();
     });
   };
 
   const saveAgeingLogic = () => {
-    setMessage(null);
-    setError(null);
-
     startTransition(async () => {
       const response = await fetch("/api/ageing", {
         method: "POST",
@@ -178,20 +172,17 @@ export function AgeingManager({
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        setError(payload.error ?? "Unable to save ageing groups.");
+        showError(payload.error ?? "Unable to save ageing groups.");
         return;
       }
 
-      setMessage("Ageing groups and as-of date saved.");
+      showSuccess("Ageing groups and as-of date saved.");
       router.refresh();
     });
   };
 
   return (
     <div className="space-y-6">
-      {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
-      {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
-
       <section className="space-y-5">
         <div className="rounded-xl border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/70">
           <div className="flex flex-col gap-4">

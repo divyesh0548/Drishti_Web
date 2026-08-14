@@ -33,10 +33,10 @@ export default async function RatioAnalysisPage({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
   };
-  const snapshot = getTrialBalanceSnapshot(scope);
+  const snapshot = await getTrialBalanceSnapshot(scope);
   const ratioConfig = readRatioLedgerConfig(scope);
 
-  const ratioTable = buildKeyRatioTable({
+  const ratioTable = await buildKeyRatioTable({
     financialYear: context.currentVersion.financialYear,
     scope,
   });

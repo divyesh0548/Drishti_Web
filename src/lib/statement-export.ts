@@ -8,11 +8,11 @@ import {
   getV8WorkbookSheet,
   type V8WorkbookSheet,
 } from "@/lib/v8-financials";
-import { resolveWorkspaceContext, type CompanySettings } from "@/lib/company-workspace";
+import { requireActiveCompany, resolveWorkspaceContext, type CompanySettings } from "@/lib/company-workspace";
 import { applyFixedAssetSchedulesToWorkbook, hasFixedAssetUpload, readFixedAssetStore, sumFixedAssetLines } from "@/lib/fixed-assets";
 import { buildKeyRatioTable } from "@/lib/key-ratios";
-import { getStatementPack, type NoteSchedule, type StatementDisplayRow } from "@/lib/statement-pack";
-import { getTrialBalanceSnapshot, type LedgerRow } from "@/lib/trial-balance";
+import { getStatementPack, type NoteSchedule, type StatementDisplayRow, type StatementPack } from "@/lib/statement-pack";
+import { getTrialBalanceSnapshot, type LedgerRow, type TrialBalanceSnapshot } from "@/lib/trial-balance";
 
 const brandBlue = "#0f6cbd";
 const brandGreen = "#7bc67e";
@@ -26,7 +26,7 @@ const pageMargin = 42;
 type StatementSheetName = "BS" | "PL" | "SOCIE" | "Cash Flow_FY26";
 
 export type ExportScope = {
-  companyId?: string;
+  companyId?: number;
   versionId?: string;
 };
 
@@ -597,7 +597,7 @@ function noteAmounts(note: NoteSchedule | undefined | null) {
   return toComparativeFromLakhs(note.totalCurrent, note.totalPrevious);
 }
 
-function findNote(pack: ReturnType<typeof getStatementPack>, id: string) {
+function findNote(pack: StatementPack, id: string) {
   return pack.notes.find((note) => note.noteNumber === id || note.displayNoteNumber === id);
 }
 
@@ -838,7 +838,7 @@ function buildFormulaNoteGroups(rows: LedgerRow[]) {
   return groups;
 }
 
-function buildTrialBalanceSheet(snapshot: ReturnType<typeof getTrialBalanceSnapshot>, companyName: string): TrialBalanceSheetResult {
+function buildTrialBalanceSheet(snapshot: TrialBalanceSnapshot, companyName: string): TrialBalanceSheetResult {
   const rows: Array<Array<string | number>> = [
     [companyName],
     [`Trial Balance mapped for note validation`],
@@ -1173,18 +1173,20 @@ function buildLinkedProfitAndLossSheet(input: {
 }
 
 /** Shared V-8 linked workbook builder — used as the default Excel export fallback. */
-export function buildLinkedStatementWorkbook(scope?: ExportScope) {
-  const workbook = read(Buffer.from(getV8WorkbookBuffer(scope)), {
+export async function buildLinkedStatementWorkbook(scope?: ExportScope) {
+  const workbook = read(Buffer.from(await getV8WorkbookBuffer(scope)), {
     type: "buffer",
     cellStyles: true,
     cellFormula: true,
   });
-  const context = resolveWorkspaceContext({
-    companyId: scope?.companyId,
-    versionId: scope?.versionId,
-  });
-  const pack = getStatementPack(scope);
-  const snapshot = getTrialBalanceSnapshot(scope);
+  const context = requireActiveCompany(
+    resolveWorkspaceContext({
+      companyId: scope?.companyId,
+      versionId: scope?.versionId,
+    }),
+  );
+  const pack = await getStatementPack(scope);
+  const snapshot = await getTrialBalanceSnapshot(scope);
   const dateLabels = formatFinancialYearLabels(context.currentVersion.financialYear);
   const trialBalanceSheet = buildTrialBalanceSheet(snapshot, context.company.name);
   const noteGroups = buildFormulaNoteGroups(snapshot.rows);
@@ -1257,20 +1259,22 @@ export function buildLinkedStatementWorkbook(scope?: ExportScope) {
 
 // Retained as a fallback in case we need to inspect legacy uploaded layouts again.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function buildTemplateDrivenWorkbook(scope?: ExportScope) {
+async function buildTemplateDrivenWorkbook(scope?: ExportScope) {
   const rawWorkbook = getUploadedWorkbookBuffer(scope);
   const workbook = read(Buffer.from(rawWorkbook), {
     type: "buffer",
     cellStyles: true,
     cellFormula: true,
   });
-  const pack = getStatementPack(scope);
-  const snapshot = getTrialBalanceSnapshot(scope);
-  const context = resolveWorkspaceContext({
-    companyId: scope?.companyId,
-    versionId: scope?.versionId,
-  });
-  const ratios = buildKeyRatioTable({
+  const pack = await getStatementPack(scope);
+  const snapshot = await getTrialBalanceSnapshot(scope);
+  const context = requireActiveCompany(
+    resolveWorkspaceContext({
+      companyId: scope?.companyId,
+      versionId: scope?.versionId,
+    }),
+  );
+  const ratios = await buildKeyRatioTable({
     financialYear: context.currentVersion.financialYear,
     scope,
   });
@@ -1782,8 +1786,9 @@ function buildTemplateDrivenWorkbook(scope?: ExportScope) {
 }
 
 export async function buildStatementPdf(scope?: ExportScope) {
-  const model = buildV8FinancialModel(scope);
+  const model = await buildV8FinancialModel(scope);
   const pages = buildPages();
+  const sheets = await Promise.all(pages.map((page) => getV8WorkbookSheet(page.sheetName, scope)));
   const footerCache = new Map<string, FooterDetails>();
 
   return await new Promise<Buffer>((resolve, reject) => {
@@ -1806,7 +1811,7 @@ export async function buildStatementPdf(scope?: ExportScope) {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
 
     pages.forEach((page, pageIndex) => {
-      const sheet = getV8WorkbookSheet(page.sheetName, scope);
+      const sheet = sheets[pageIndex];
 
       if (!sheet) {
         return;

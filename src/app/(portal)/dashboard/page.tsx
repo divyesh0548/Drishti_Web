@@ -1,6 +1,8 @@
+import Link from "next/link";
+
 import { MetricTile, SectionCard, StatusPill } from "@/components/portal/cards";
-import { assertRouteAccess } from "@/lib/navigation";
-import { resolveWorkspaceContextFromSearchParams } from "@/lib/portal-context";
+import { assertRouteAccess, canAccessRoute } from "@/lib/navigation";
+import { resolveWorkspaceCompanyFromSearchParams } from "@/lib/portal-context";
 import { getTrialBalanceSnapshot } from "@/lib/trial-balance";
 import { formatCurrency } from "@/lib/utils";
 
@@ -9,9 +11,34 @@ export default async function DashboardPage({
 }: {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const context = await resolveWorkspaceContextFromSearchParams(searchParams ? await searchParams : undefined);
+  const context = await resolveWorkspaceCompanyFromSearchParams(searchParams ? await searchParams : undefined);
   assertRouteAccess(context.currentUser.role, "/dashboard");
-  const snapshot = getTrialBalanceSnapshot({
+
+  if (!context.currentVersion) {
+    const canImport = canAccessRoute(context.currentUser.role, "/import-center");
+
+    return (
+      <div className="space-y-6">
+        <SectionCard title="No version yet" eyebrow={context.company.name}>
+          <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
+            {canImport
+              ? "This company does not have a trial balance version yet. Upload a workbook in Imports to create Version 1 and unlock mapping, statements, and reports."
+              : "This company does not have a trial balance version yet. Ask a company admin or finance user to upload the first trial balance."}
+          </p>
+          {canImport ? (
+            <Link
+              href={`/import-center?company=${context.company.id}`}
+              className="mt-4 inline-flex rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Go to Imports
+            </Link>
+          ) : null}
+        </SectionCard>
+      </div>
+    );
+  }
+
+  const snapshot = await getTrialBalanceSnapshot({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
   });

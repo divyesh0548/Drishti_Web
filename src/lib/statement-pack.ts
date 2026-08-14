@@ -680,8 +680,8 @@ function reconcileReservesWithProfitAndLoss(notes: BuiltNote[], profitAndLoss: B
   });
 }
 
-export function getStatementPack(scope?: Parameters<typeof getTrialBalanceSnapshot>[0]): StatementPack {
-  const snapshot = getTrialBalanceSnapshot(scope);
+export async function getStatementPack(scope?: Parameters<typeof getTrialBalanceSnapshot>[0]): Promise<StatementPack> {
+  const snapshot = await getTrialBalanceSnapshot(scope);
   const baseNotes = buildNotes(snapshot);
   const profitAndLoss = buildProfitAndLoss(baseNotes);
   const preliminaryBalanceSheet = buildBalanceSheet(baseNotes);

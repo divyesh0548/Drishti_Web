@@ -1,11 +1,14 @@
+import { parseCompanyId } from "@/lib/company-id";
+import { loadCompaniesFromDb } from "@/lib/company-workspace";
 import { getTrialBalanceSnapshot } from "@/lib/trial-balance";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const companyId = searchParams.get("company");
+  const companyId = parseCompanyId(searchParams.get("company"));
   const versionId = searchParams.get("version");
-  const snapshot = getTrialBalanceSnapshot(
+  await loadCompaniesFromDb();
+  const snapshot = await getTrialBalanceSnapshot(
     companyId && versionId
       ? {
           companyId,

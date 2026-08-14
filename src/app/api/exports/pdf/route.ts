@@ -22,7 +22,7 @@ async function ensurePdfKitAssets() {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const selection = getWorkspaceSelection(searchParams);
-  const context = requireRequestWorkspaceContext(request, selection);
+  const context = await requireRequestWorkspaceContext(request, selection);
 
   if (!context) {
     return Response.json({ error: "Authentication required." }, { status: 401 });

@@ -18,10 +18,10 @@ import { PortalSelect } from "@/components/ui/portal-select";
 import { cn } from "@/lib/utils";
 
 export type WorkspaceContextPayload = {
-  company: { id: string; name: string };
-  companies: Array<{ id: string; name: string }>;
+  company: { id: number; name: string } | null;
+  companies: Array<{ id: number; name: string }>;
   currentUser: { id: string; name: string; role: string };
-  currentVersion: { id: string; label: string; financialYear: string };
+  currentVersion: { id: string; label: string; financialYear: string } | null;
   versions: Array<{ id: string; label: string; financialYear: string }>;
 };
 
@@ -140,9 +140,13 @@ export function Topbar() {
                 <div className="min-w-0">
                   <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/80 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-blue-700 dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-blue-300">
                     <span className="h-1.5 w-1.5 rounded-full bg-blue-500 dark:bg-blue-300" />
-                    {workspace.company.name}
-                    <span className="text-blue-400 dark:text-blue-400/70">|</span>
-                    {workspace.currentVersion.label}
+                    {workspace.company?.name ?? "No company yet"}
+                    {workspace.currentVersion ? (
+                      <>
+                        <span className="text-blue-400 dark:text-blue-400/70">|</span>
+                        {workspace.currentVersion.label}
+                      </>
+                    ) : null}
                   </div>
                   <div className="relative mt-3 h-[2.5rem] sm:h-[2.85rem]">
                     <h2
@@ -171,12 +175,14 @@ export function Topbar() {
                 <div className="min-w-0">
                   <p className="text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-blue-600 dark:text-blue-300">Workspace</p>
                   <h2 className="mt-1 font-[var(--font-display)] text-[1.55rem] font-semibold tracking-[-0.03em] text-slate-950 dark:text-slate-50">
-                    {workspace?.company.name ?? "Drishti portal"}
+                    {workspace?.company?.name ?? "Drishti portal"}
                   </h2>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    {workspace
+                    {workspace?.currentVersion
                       ? `${workspace.currentVersion.label} · FY ${workspace.currentVersion.financialYear}`
-                      : "Loading company context..."}
+                      : workspace
+                        ? "Upload a trial balance to create the first version"
+                        : "Loading company context..."}
                   </p>
                 </div>
               )}
@@ -221,13 +227,46 @@ export function Topbar() {
               <>
                 {workspace.currentUser.role === "SITE_ADMIN" ? (
                   <ContextChip icon={Building2} label="Company">
+                    {workspace.companies.length > 0 && workspace.company ? (
+                      <PortalSelect
+                        id="workspace-company"
+                        value={String(workspace.company.id)}
+                        onChange={(value) => updateSelection("company", value)}
+                        options={workspace.companies.map((company) => ({
+                          value: String(company.id),
+                          label: company.name,
+                        }))}
+                        sx={{
+                          minWidth: 0,
+                          "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+                          "& .MuiSelect-select": {
+                            px: 0,
+                            py: 0,
+                            fontWeight: 600,
+                            fontSize: "0.875rem",
+                          },
+                          bgcolor: "transparent",
+                        }}
+                      />
+                    ) : (
+                      <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-50">No company yet</p>
+                    )}
+                  </ContextChip>
+                ) : (
+                  <ContextChip icon={Building2} label="Company">
+                    <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-50">{workspace.company?.name ?? "No company"}</p>
+                  </ContextChip>
+                )}
+
+                <ContextChip icon={Layers3} label="Version">
+                  {workspace.currentVersion ? (
                     <PortalSelect
-                      id="workspace-company"
-                      value={workspace.company.id}
-                      onChange={(value) => updateSelection("company", value)}
-                      options={workspace.companies.map((company) => ({
-                        value: company.id,
-                        label: company.name,
+                      id="workspace-version"
+                      value={workspace.currentVersion.id}
+                      onChange={(value) => updateSelection("version", value)}
+                      options={workspace.versions.map((version) => ({
+                        value: version.id,
+                        label: `${version.label} | ${version.financialYear}`,
                       }))}
                       sx={{
                         minWidth: 0,
@@ -241,39 +280,14 @@ export function Topbar() {
                         bgcolor: "transparent",
                       }}
                     />
-                  </ContextChip>
-                ) : (
-                  <ContextChip icon={Building2} label="Company">
-                    <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-50">{workspace.company.name}</p>
-                  </ContextChip>
-                )}
-
-                <ContextChip icon={Layers3} label="Version">
-                  <PortalSelect
-                    id="workspace-version"
-                    value={workspace.currentVersion.id}
-                    onChange={(value) => updateSelection("version", value)}
-                    options={workspace.versions.map((version) => ({
-                      value: version.id,
-                      label: `${version.label} | ${version.financialYear}`,
-                    }))}
-                    sx={{
-                      minWidth: 0,
-                      "& .MuiOutlinedInput-notchedOutline": { border: "none" },
-                      "& .MuiSelect-select": {
-                        px: 0,
-                        py: 0,
-                        fontWeight: 600,
-                        fontSize: "0.875rem",
-                      },
-                      bgcolor: "transparent",
-                    }}
-                  />
+                  ) : (
+                    <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-50">No version</p>
+                  )}
                 </ContextChip>
 
                 <ContextChip icon={CalendarRange} label="Financial Year" className="md:col-span-2 xl:col-span-1">
                   <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-50">
-                    {workspace.currentVersion.financialYear}
+                    {workspace.currentVersion?.financialYear ?? "—"}
                   </p>
                 </ContextChip>
               </>

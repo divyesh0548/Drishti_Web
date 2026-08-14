@@ -4,21 +4,18 @@ import { useState, useTransition } from "react";
 
 import { ArrowRight, BarChart3, KeyRound, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 import { PortalButton } from "@/components/ui/portal-button";
+import { usePortalSnackbar } from "@/components/ui/portal-snackbar";
 
 export function LoginForm() {
   const [isPending, startTransition] = useTransition();
+  const { showSuccess, showError } = usePortalSnackbar();
   const [mode, setMode] = useState<"login" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
   const submit = () => {
-    setError(null);
-    setMessage(null);
-
     startTransition(async () => {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -35,7 +32,7 @@ export function LoginForm() {
       const payload = (await response.json()) as { error?: string; redirectTo?: string };
 
       if (!response.ok) {
-        setError(payload.error ?? "Unable to sign in.");
+        showError(payload.error ?? "Unable to sign in.");
         return;
       }
 
@@ -44,9 +41,6 @@ export function LoginForm() {
   };
 
   const submitPasswordReset = () => {
-    setError(null);
-    setMessage(null);
-
     startTransition(async () => {
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
@@ -64,11 +58,11 @@ export function LoginForm() {
       const payload = (await response.json()) as { error?: string; message?: string };
 
       if (!response.ok) {
-        setError(payload.error ?? "Unable to reset password.");
+        showError(payload.error ?? "Unable to reset password.");
         return;
       }
 
-      setMessage(payload.message ?? "Password updated successfully.");
+      showSuccess(payload.message ?? "Password updated successfully.");
       setMode("login");
       setPassword("");
       setNewPassword("");
@@ -148,7 +142,6 @@ export function LoginForm() {
                 value={email}
                 onChange={(event) => {
                   setEmail(event.target.value);
-                  setError(null);
                 }}
                 placeholder="name@company.com"
                 autoComplete="username"
@@ -163,8 +156,6 @@ export function LoginForm() {
                     variant="text"
                     onClick={() => {
                       setMode("reset");
-                      setError(null);
-                      setMessage(null);
                     }}
                     sx={{ minWidth: 0, p: 0, fontSize: "0.875rem", fontWeight: 500, textTransform: "none" }}
                   >
@@ -177,7 +168,6 @@ export function LoginForm() {
                   value={password}
                   onChange={(event) => {
                     setPassword(event.target.value);
-                    setError(null);
                   }}
                   placeholder="Enter password"
                   autoComplete="current-password"
@@ -199,8 +189,6 @@ export function LoginForm() {
                     variant="text"
                     onClick={() => {
                       setMode("login");
-                      setError(null);
-                      setMessage(null);
                     }}
                     sx={{ minWidth: 0, p: 0, fontSize: "0.875rem", fontWeight: 500, textTransform: "none", whiteSpace: "nowrap" }}
                   >
@@ -216,7 +204,6 @@ export function LoginForm() {
                     value={newPassword}
                     onChange={(event) => {
                       setNewPassword(event.target.value);
-                      setError(null);
                     }}
                     placeholder="Minimum 8 characters"
                     autoComplete="new-password"
@@ -231,7 +218,6 @@ export function LoginForm() {
                     value={confirmPassword}
                     onChange={(event) => {
                       setConfirmPassword(event.target.value);
-                      setError(null);
                     }}
                     placeholder="Re-enter new password"
                     autoComplete="new-password"
@@ -252,9 +238,6 @@ export function LoginForm() {
               </label>
               <span>Enterprise access for finance, audit, and admin roles</span>
             </div>
-
-            {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/12 dark:text-rose-300">{error}</div> : null}
-            {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/12 dark:text-emerald-300">{message}</div> : null}
 
             <PortalButton
               variant="primary"

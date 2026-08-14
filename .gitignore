@@ -16,9 +16,7 @@ dist/
 
 # Environment & secrets
 .env
-.env.*
 !.env.example
-!env.example
 
 # Local runtime workspace data
 data/companies/

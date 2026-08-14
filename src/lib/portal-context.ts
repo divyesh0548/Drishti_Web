@@ -1,7 +1,12 @@
+import { redirect } from "next/navigation";
+
 import { requireWorkspaceContext } from "@/lib/auth";
+import { companyIdToParam, parseCompanyId } from "@/lib/company-id";
+import type { ActiveWorkspaceContext, CompanyWorkspaceContext, WorkspaceContext } from "@/lib/company-workspace";
+import { canAccessRoute } from "@/lib/navigation";
 
 export type WorkspaceSelection = {
-  companyId?: string;
+  companyId?: number;
   versionId?: string;
 };
 
@@ -25,12 +30,40 @@ function readValue(input: SearchParamsInput, key: string) {
 
 export function getWorkspaceSelection(input?: SearchParamsInput): WorkspaceSelection {
   return {
-    companyId: readValue(input, "company"),
+    companyId: parseCompanyId(readValue(input, "company")),
     versionId: readValue(input, "version"),
   };
 }
 
-export async function resolveWorkspaceContextFromSearchParams(input?: SearchParamsInput) {
+export async function resolveWorkspaceContextFromSearchParams(input?: SearchParamsInput): Promise<ActiveWorkspaceContext> {
+  const context = await requireWorkspaceContext(getWorkspaceSelection(input));
+
+  if (!context.company) {
+    redirect(context.currentUser.role === "SITE_ADMIN" ? "/admin" : "/login");
+  }
+
+  if (!context.currentVersion) {
+    if (canAccessRoute(context.currentUser.role, "/import-center")) {
+      redirect(`/import-center?company=${context.company.id}`);
+    }
+
+    redirect(`/dashboard?company=${context.company.id}`);
+  }
+
+  return context as ActiveWorkspaceContext;
+}
+
+export async function resolveWorkspaceCompanyFromSearchParams(input?: SearchParamsInput): Promise<CompanyWorkspaceContext> {
+  const context = await requireWorkspaceContext(getWorkspaceSelection(input));
+
+  if (!context.company) {
+    redirect(context.currentUser.role === "SITE_ADMIN" ? "/admin" : "/login");
+  }
+
+  return context as CompanyWorkspaceContext;
+}
+
+export async function resolveOptionalWorkspaceContextFromSearchParams(input?: SearchParamsInput): Promise<WorkspaceContext> {
   return requireWorkspaceContext(getWorkspaceSelection(input));
 }
 
@@ -38,7 +71,7 @@ export function buildWorkspaceQuery(selection: WorkspaceSelection) {
   const params = new URLSearchParams();
 
   if (selection.companyId) {
-    params.set("company", selection.companyId);
+    params.set("company", companyIdToParam(selection.companyId));
   }
 
   if (selection.versionId) {

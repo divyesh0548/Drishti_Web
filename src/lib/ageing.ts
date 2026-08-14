@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import { read, utils } from "xlsx";
 
-import { getCompanyVersionPaths, resolveWorkspaceContext } from "@/lib/company-workspace";
+import { getCompanyVersionPaths, requireActiveCompany, resolveWorkspaceContext } from "@/lib/company-workspace";
 
 export type AgeingKind = "receivables" | "payables";
 export type AgeingCategory = "NORMAL" | "MSME";
@@ -40,7 +40,7 @@ export type AgeingStore = {
 };
 
 export type AgeingScope = {
-  companyId?: string;
+  companyId?: number;
   versionId?: string;
 };
 
@@ -90,8 +90,8 @@ function resolveScope(scope?: AgeingScope) {
 
   const context = resolveWorkspaceContext();
   return {
-    companyId: scope?.companyId ?? context.company.id,
-    versionId: scope?.versionId ?? context.currentVersion.id,
+    companyId: scope?.companyId ?? requireActiveCompany(context).company.id,
+    versionId: scope?.versionId ?? requireActiveCompany(context).currentVersion.id,
   };
 }
 

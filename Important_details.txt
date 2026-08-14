@@ -1,0 +1,1 @@
+Master grouping upload still takes statement-area from "data/master-grouping.json" file. So only excel file is not enough.

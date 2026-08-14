@@ -6,7 +6,8 @@ export type { ExportScope };
 
 export type ExcelExportContext = {
   scope: ExportScope;
-  companyId: string;
+  companyId: number;
+  companySlug: string;
   companyName: string;
   versionId: string;
   financialYear: string;
@@ -29,15 +30,15 @@ export type ExcelExportProfile = {
   /** Stable id stored on company settings as `excelProfileId`. */
   id: string;
   label: string;
-  /** When set, these company ids automatically select this profile. */
-  companyIds?: string[];
+  /** When set, these company slugs automatically select this profile. */
+  companySlugs?: string[];
   /**
    * When true, apply header/total colors only — skip column autofit and range
    * clamp so the company template's layout stays intact.
    */
   preserveTemplateStyles?: boolean;
   /** Build the company Excel workbook from the shared financial model. */
-  build: (context: ExcelExportContext) => Buffer;
+  build: (context: ExcelExportContext) => Buffer | Promise<Buffer>;
   /** Optional download filename factory. */
   fileName?: (context: ExcelExportContext) => string;
 };

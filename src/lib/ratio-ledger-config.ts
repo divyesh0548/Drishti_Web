@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { getCompanyVersionPaths, resolveWorkspaceContext } from "@/lib/company-workspace";
+import { getCompanyVersionPaths, requireActiveCompany, resolveWorkspaceContext } from "@/lib/company-workspace";
 
 export type RatioLedgerSelection = {
   excludedGlNumbers: string[];
@@ -14,7 +14,7 @@ export type RatioLedgerConfigStore = {
 };
 
 export type RatioLedgerScope = {
-  companyId?: string;
+  companyId?: number;
   versionId?: string;
 };
 
@@ -25,8 +25,8 @@ function resolveScope(scope?: RatioLedgerScope) {
 
   const context = resolveWorkspaceContext();
   return {
-    companyId: scope?.companyId ?? context.company.id,
-    versionId: scope?.versionId ?? context.currentVersion.id,
+    companyId: scope?.companyId ?? requireActiveCompany(context).company.id,
+    versionId: scope?.versionId ?? requireActiveCompany(context).currentVersion.id,
   };
 }
 

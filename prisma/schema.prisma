@@ -4,122 +4,143 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-model Firm {
-  id          String   @id @default(cuid())
-  name        String
-  brandColor  String?
-  users       User[]
-  clients     Client[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model User {
-  id          String    @id @default(cuid())
-  firmId      String
-  firm        Firm      @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  name        String
-  email       String    @unique
-  role        UserRole
-  isActive    Boolean   @default(true)
-  tasks       WorkflowTask[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Client {
-  id             String         @id @default(cuid())
-  firmId         String
-  firm           Firm           @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  companyName    String
-  pan            String
-  cin            String?
-  gst            String?
-  industry       String
-  entityType     String
-  financialYear  String
-  currency       String
-  status         WorkStatus
-  imports        TrialBalanceImport[]
-  statements     StatementPack[]
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-}
-
-model TrialBalanceImport {
-  id             String       @id @default(cuid())
-  clientId       String
-  client         Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  sourceSystem   String
-  fileName       String
-  importedById   String?
-  importedBy     User?        @relation(fields: [importedById], references: [id])
-  status         ImportStatus
-  ledgers        Ledger[]
-  importedAt     DateTime     @default(now())
-}
-
-model Ledger {
-  id              String             @id @default(cuid())
-  importId        String
-  trialBalance    TrialBalanceImport @relation(fields: [importId], references: [id], onDelete: Cascade)
-  code            String
-  name            String
-  debit           Decimal            @db.Decimal(18, 2)
-  credit          Decimal            @db.Decimal(18, 2)
-  netBalance      Decimal            @db.Decimal(18, 2)
-  mappingHead     String?
-  noteNumber      String?
-  confidence      Decimal?           @db.Decimal(5, 2)
-}
-
-model StatementPack {
-  id            String      @id @default(cuid())
-  clientId      String
-  client        Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  version       Int
-  framework     String
-  generatedById String?
-  generatedBy   User?       @relation(fields: [generatedById], references: [id])
-  status        WorkStatus
-  generatedAt   DateTime    @default(now())
-}
-
-model WorkflowTask {
-  id           String      @id @default(cuid())
-  userId       String
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title        String
-  clientName   String
-  status       WorkStatus
-  dueDate      DateTime
-  createdAt    DateTime    @default(now())
 }
 
 enum UserRole {
-  SUPER_ADMIN
-  FIRM_ADMIN
-  MANAGER
-  ARTICLE
+  SITE_ADMIN
+  COMPANY_ADMIN
+  FINANCE
   AUDITOR
-  CLIENT
-  READ_ONLY
 }
 
-enum ImportStatus {
-  QUEUED
-  VALIDATING
-  IMPORTED
-  FAILED
+enum VersionStatus {
+  DRAFT
+  ISSUED
 }
 
-enum WorkStatus {
-  PENDING
-  IN_PROGRESS
-  READY_FOR_REVIEW
-  APPROVED
+model Company {
+  id                Int      @id @default(autoincrement())
+  slug              String   @unique
+  name              String
+  code              String
+  defaultVersionId  String?
+  reportingCurrency String   @default("INR")
+  unitsLabel        String   @default("(Rs. in lakhs)")
+  excelProfileId    String?
+  /// directors, auditors, footerNote (matches company settings.json)
+  settings          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  users    User[]
+  versions StatementVersion[]
+
+  @@map("companies")
 }
 
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         UserRole
+  companyId    Int?
+  company      Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  isActive     Boolean   @default(true)
+  /// True until the user replaces the emailed temporary password.
+  tempLogin    Boolean   @default(true) @map("temp_login")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  createdVersions StatementVersion[] @relation("VersionCreatedBy")
+
+  @@index([companyId])
+  @@map("users")
+}
+
+model StatementVersion {
+  id              String        @id @default(cuid())
+  companyId       Int
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  versionNumber   Int
+  label           String
+  financialYear   String
+  status          VersionStatus @default(DRAFT)
+  createdByUserId String?
+  createdBy       User?         @relation("VersionCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+
+  trialBalanceFileName String?
+  /// Disk or object-storage key for the original Trial Balance.xlsx
+  trialBalanceFileKey  String?
+
+  ledgers            TrialBalanceLedger[]
+  groupingOverrides  LedgerGroupingOverride[]
+
+  @@unique([companyId, versionNumber])
+  @@index([companyId, financialYear])
+  @@map("statement_versions")
+}
+
+model TrialBalanceLedger {
+  id                     String           @id @default(cuid())
+  versionId              String
+  version                StatementVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  lineNo                 Int
+  financialStatementItem String           @default("")
+  glNumber               String
+  glDescription          String           @default("")
+  currentYear            Decimal          @db.Decimal(18, 2)
+  previousYear           Decimal          @db.Decimal(18, 2)
+
+  @@unique([versionId, lineNo])
+  @@index([versionId, glNumber])
+  @@map("trial_balance_ledgers")
+}
+
+model LedgerGroupingOverride {
+  id            String           @id @default(cuid())
+  versionId     String
+  version       StatementVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  glNumber      String
+  glDescription String           @default("")
+  groupKey      String
+  subgroupKey   String
+  accountClass  String
+  bucket        String
+  label         String
+  subgroupLabel String
+  noteNumber    String
+  noteTitle     String
+  notes         String           @default("")
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([versionId, glNumber])
+  @@map("ledger_grouping_overrides")
+}
+
+model MasterGrouping {
+  id            String   @id @default(cuid())
+  groupKey      String   @unique
+  label         String
+  statementArea String
+  keywords      String[] @default([])
+  noteNumber    String?
+  subgroupKey   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ledgers MasterGroupingLedger[]
+
+  @@map("master_groupings")
+}
+
+model MasterGroupingLedger {
+  id       String         @id @default(cuid())
+  glNumber String         @unique
+  groupKey String
+  group    MasterGrouping @relation(fields: [groupKey], references: [groupKey], onDelete: Cascade)
+
+  @@index([groupKey])
+  @@map("master_grouping_ledgers")
+}

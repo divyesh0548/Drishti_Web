@@ -5,6 +5,7 @@ import {
   authCookieName,
   createSessionCookieValue,
   getSessionCookieOptions,
+  postAuthenticationPath,
 } from "@/lib/auth";
 
 export async function POST(request: Request) {
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
   }
 
-  const user = attemptLogin(email, password);
+  const user = await attemptLogin(email, password);
 
   if (!user) {
     return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({
     user,
-    redirectTo: user.companyId ? `/dashboard?company=${user.companyId}` : "/dashboard",
+    redirectTo: postAuthenticationPath(user),
   });
 
   response.cookies.set(

@@ -1,4 +1,5 @@
 import { GroupingManager } from "@/components/portal/grouping-manager";
+import { MasterGroupingUploader } from "@/components/portal/master-grouping-uploader";
 import { PageHeader, SectionCard, StatusPill, SummaryLabel } from "@/components/portal/cards";
 import { buildAiWorkflowInsights } from "@/lib/ai-workflow";
 import { buildKeyRatioTable } from "@/lib/key-ratios";
@@ -18,13 +19,13 @@ export default async function MappingStudioPage({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
   };
-  const snapshot = getTrialBalanceSnapshot(scope);
-  const groupingOptions = getLedgerGroupingOptions(scope);
+  const snapshot = await getTrialBalanceSnapshot(scope);
+  const groupingOptions = await getLedgerGroupingOptions(scope);
   const subgroupOptions = getLedgerSubgroupOptions(scope);
-  const savedOverrides = getLedgerGroupingOverrideList(scope);
+  const savedOverrides = await getLedgerGroupingOverrideList(scope);
   const mappedCount = snapshot.rows.filter((row) => row.groupingKey && row.noteNumber).length;
   const unmappedCount = snapshot.rows.length - mappedCount;
-  const ratioTable = buildKeyRatioTable({
+  const ratioTable = await buildKeyRatioTable({
     financialYear: context.currentVersion.financialYear,
     scope,
   });
@@ -35,6 +36,7 @@ export default async function MappingStudioPage({
     versionLabel: context.currentVersion.label,
     financialYear: context.currentVersion.financialYear,
   });
+  const isSiteAdmin = context.currentUser.role === "SITE_ADMIN";
 
   return (
     <div className="space-y-6">
@@ -48,6 +50,7 @@ export default async function MappingStudioPage({
             <span className="inline-flex items-center text-sm font-medium text-slate-500 dark:text-slate-400">
               {snapshot.rows.length} source ledgers
             </span>
+            {isSiteAdmin ? <MasterGroupingUploader /> : null}
           </>
         }
       />

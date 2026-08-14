@@ -5,7 +5,7 @@ import { readAgeingStore, saveAgeingGroups, type AgeingGroup } from "@/lib/agein
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceContext(request, {
     companyId: searchParams.get("companyId") ?? undefined,
     versionId: searchParams.get("versionId") ?? undefined,
   });
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     ageGroups?: AgeingGroup[];
   };
 
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceContext(request, {
     companyId: body.companyId,
     versionId: body.versionId,
   });

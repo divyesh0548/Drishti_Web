@@ -206,11 +206,11 @@ function addAmounts(...amounts: ComparativeAmount[]) {
   );
 }
 
-export function buildKeyRatioTable(input: {
+export async function buildKeyRatioTable(input: {
   financialYear: string;
   scope?: Parameters<typeof getTrialBalanceSnapshot>[0];
 }) {
-  const snapshot = getTrialBalanceSnapshot(input.scope);
+  const snapshot = await getTrialBalanceSnapshot(input.scope);
   const ratioConfig = readRatioLedgerConfig(input.scope);
   const sourceRows = snapshot.rows.filter((row) => row.accountClass !== "opening-balance" && row.noteNumber);
 

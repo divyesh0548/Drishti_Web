@@ -58,12 +58,12 @@ export function buildLtelStatementWorkbook(context: ExcelExportContext): Buffer 
 
 /**
  * LTEL company Excel layout.
- * Selected automatically for company id `ltel` — no excelProfileId required.
+ * Selected automatically for company slug `ltel` — no excelProfileId required.
  */
 export const ltelExcelProfile: ExcelExportProfile = {
   id: "ltel-desired-structure",
   label: "LTEL desired statement workbook",
-  companyIds: [LTEL_COMPANY_ID],
+  companySlugs: [LTEL_COMPANY_ID],
   preserveTemplateStyles: true,
   build: buildLtelStatementWorkbook,
   fileName: (context) => {

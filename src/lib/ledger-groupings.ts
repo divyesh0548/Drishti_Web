@@ -1,7 +1,10 @@
-import fs from "node:fs";
-import path from "node:path";
-
-import { getCompanyLogicPaths, getCompanyVersionPaths, resolveWorkspaceContext } from "@/lib/company-workspace";
+import { requireActiveCompany, resolveWorkspaceContext } from "@/lib/company-workspace";
+import {
+  deleteLedgerGroupingOverrideFromDb,
+  loadLedgerGroupingOverridesFromDb,
+  loadMasterGroupingSourceFromDb,
+  saveLedgerGroupingOverrideToDb,
+} from "@/lib/grouping-database";
 import type { LedgerRow } from "@/lib/trial-balance";
 
 export type GroupingBucket = LedgerRow["derivedBucket"];
@@ -49,19 +52,10 @@ export type ResolvedLedgerGrouping = {
   noteTitle: string;
 };
 
-type GroupingStore = {
-  updatedAt: string | null;
-  overrides: Record<string, LedgerGroupingOverride>;
-};
-
-type RawGroupingStore = {
-  updatedAt?: string | null;
-  overrides?: Record<string, Partial<LedgerGroupingOverride> & { bucket?: string; subgroupKey?: string }>;
-};
-
 type MasterGroupingSource = {
   options: LedgerGroupingOption[];
   lookup: Record<string, { key: string; label: string }>;
+  stamp: string;
 };
 
 type SubgroupCatalogEntry = LedgerSubgroupOption & {
@@ -69,11 +63,9 @@ type SubgroupCatalogEntry = LedgerSubgroupOption & {
 };
 
 export type GroupingScope = {
-  companyId?: string;
+  companyId?: number;
   versionId?: string;
 };
-
-const cachedMasterGroupingSource: Record<string, { version: number; source: MasterGroupingSource }> = {};
 
 const noteTitleByNumber = {
   "3": "Share Capital",
@@ -223,18 +215,9 @@ function resolveScopedWorkspace(scope?: GroupingScope) {
   });
 
   return {
-    companyId: scope?.companyId ?? context.company.id,
-    versionId: scope?.versionId ?? context.currentVersion.id,
+    companyId: scope?.companyId ?? requireActiveCompany(context).company.id,
+    versionId: scope?.versionId ?? requireActiveCompany(context).currentVersion.id,
   };
-}
-
-function resolveGroupingStorePath(scope?: GroupingScope) {
-  const resolvedScope = resolveScopedWorkspace(scope);
-  return getCompanyVersionPaths(resolvedScope.companyId, resolvedScope.versionId).groupingOverridesPath;
-}
-
-function resolveMasterGroupingSourcePath(scope?: GroupingScope) {
-  return getCompanyLogicPaths(resolveScopedWorkspace(scope).companyId).masterGroupingSourcePath;
 }
 
 function normalizeText(value: string) {
@@ -276,41 +259,12 @@ function accountClassForBucket(bucket: GroupingBucket): LedgerRow["accountClass"
   return "other";
 }
 
-function loadMasterGroupingSource(scope?: GroupingScope): MasterGroupingSource {
-  const masterGroupingSourcePath = resolveMasterGroupingSourcePath(scope);
-  const version = fs.existsSync(masterGroupingSourcePath) ? fs.statSync(masterGroupingSourcePath).mtimeMs : 0;
-
-  if (cachedMasterGroupingSource[masterGroupingSourcePath]?.version === version) {
-    return cachedMasterGroupingSource[masterGroupingSourcePath].source;
-  }
-
-  if (version === 0) {
-    return {
-      options: [],
-      lookup: {},
-    };
-  }
-
-  const parsed = JSON.parse(fs.readFileSync(masterGroupingSourcePath, "utf8")) as {
-    options?: LedgerGroupingOption[];
-    lookup?: Record<string, { key: string; label: string }>;
-  };
-
-  const source = {
-    options: [...(parsed.options ?? [])].sort((left, right) => left.label.localeCompare(right.label)),
-    lookup: parsed.lookup ?? {},
-  } satisfies MasterGroupingSource;
-
-  cachedMasterGroupingSource[masterGroupingSourcePath] = {
-    version,
-    source,
-  };
-
-  return source;
+async function loadMasterGroupingSource(): Promise<MasterGroupingSource> {
+  return loadMasterGroupingSourceFromDb();
 }
 
-export function getLedgerGroupingOptions(scope?: GroupingScope) {
-  return loadMasterGroupingSource(scope).options;
+export async function getLedgerGroupingOptions(_scope?: GroupingScope) {
+  return (await loadMasterGroupingSource()).options;
 }
 
 export function getLedgerSubgroupOptions(scope?: GroupingScope, groupKey?: string) {
@@ -324,40 +278,18 @@ export function getLedgerSubgroupOptions(scope?: GroupingScope, groupKey?: strin
     });
 }
 
-export function getGroupingStorePath(scope?: GroupingScope) {
-  return resolveGroupingStorePath(scope);
+export async function getMasterGroupingStamp() {
+  return (await loadMasterGroupingSource()).stamp;
 }
 
-export function getMasterGroupingSourcePath(scope?: GroupingScope) {
-  return resolveMasterGroupingSourcePath(scope);
-}
-
-export function getGroupingOption(groupKey: string, scope?: GroupingScope) {
-  return getLedgerGroupingOptions(scope).find((option) => option.key === groupKey) ?? null;
+export async function getGroupingOption(groupKey: string, scope?: GroupingScope) {
+  return (await getLedgerGroupingOptions(scope)).find((option) => option.key === groupKey) ?? null;
 }
 
 export function getLedgerSubgroupOption(subgroupKey: string, groupKey?: string) {
   return (
     subgroupCatalog.find((option) => option.key === subgroupKey && (groupKey ? option.groupKey === groupKey : true)) ?? null
   );
-}
-
-function ensureGroupingStore(scope?: GroupingScope) {
-  const groupingStorePath = resolveGroupingStorePath(scope);
-  const directory = path.dirname(groupingStorePath);
-
-  if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory, { recursive: true });
-  }
-
-  if (!fs.existsSync(groupingStorePath)) {
-    const initialStore: GroupingStore = {
-      updatedAt: null,
-      overrides: {},
-    };
-
-    fs.writeFileSync(groupingStorePath, `${JSON.stringify(initialStore, null, 2)}\n`, "utf8");
-  }
 }
 
 function resolveGroupingSelection(input: {
@@ -636,85 +568,28 @@ function resolveLedgerGrouping(input: {
   };
 }
 
-function readGroupingStoreRaw(scope?: GroupingScope) {
-  const groupingStorePath = resolveGroupingStorePath(scope);
-  ensureGroupingStore(scope);
-  const raw = fs.readFileSync(groupingStorePath, "utf8");
-
-  try {
-    return JSON.parse(raw) as RawGroupingStore;
-  } catch {
-    const fallbackStore: GroupingStore = {
-      updatedAt: null,
-      overrides: {},
-    };
-
-    fs.writeFileSync(groupingStorePath, `${JSON.stringify(fallbackStore, null, 2)}\n`, "utf8");
-    return fallbackStore;
-  }
+export async function getLedgerGroupingOverrides(scope?: GroupingScope) {
+  const resolved = resolveScopedWorkspace(scope);
+  return loadLedgerGroupingOverridesFromDb({
+    companyId: resolved.companyId,
+    versionId: resolved.versionId,
+  });
 }
 
-export function readGroupingStore(scope?: GroupingScope) {
-  const parsed = readGroupingStoreRaw(scope);
-  const overrides: Record<string, LedgerGroupingOverride> = {};
-
-  for (const [glNumber, candidate] of Object.entries(parsed.overrides ?? {})) {
-    if (!candidate || typeof candidate.groupKey !== "string" || typeof candidate.glDescription !== "string") {
-      continue;
-    }
-
-    const option = getGroupingOption(candidate.groupKey, scope);
-
-    if (!option) {
-      continue;
-    }
-
-    const resolved = resolveLedgerGrouping({
-      groupKey: option.key,
-      label: option.label,
-      glNumber,
-      glDescription: candidate.glDescription,
-      subgroupKey: typeof candidate.subgroupKey === "string" ? candidate.subgroupKey : undefined,
-    });
-
-    overrides[glNumber] = {
-      glNumber,
-      glDescription: candidate.glDescription,
-      groupKey: resolved.key,
-      subgroupKey: resolved.subgroupKey,
-      label: resolved.label,
-      accountClass: resolved.accountClass,
-      bucket: resolved.bucket,
-      subgroupLabel: resolved.subgroupLabel,
-      noteNumber: resolved.noteNumber,
-      noteTitle: resolved.noteTitle,
-      notes: typeof candidate.notes === "string" ? candidate.notes : "",
-      updatedAt: typeof candidate.updatedAt === "string" ? candidate.updatedAt : new Date(0).toISOString(),
-    };
-  }
-
-  return {
-    updatedAt: parsed.updatedAt ?? null,
-    overrides,
-  } satisfies GroupingStore;
+export async function getLedgerGroupingOverrideList(scope?: GroupingScope) {
+  const overrides = await getLedgerGroupingOverrides(scope);
+  return Object.values(overrides).sort((left, right) => left.glNumber.localeCompare(right.glNumber));
 }
 
-function writeGroupingStoreScoped(store: GroupingStore, scope?: GroupingScope) {
-  const groupingStorePath = resolveGroupingStorePath(scope);
-  ensureGroupingStore(scope);
-  fs.writeFileSync(groupingStorePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+export async function getLedgerGroupingOverrideStamp(scope?: GroupingScope) {
+  const overrides = await getLedgerGroupingOverrides(scope);
+  return Object.values(overrides)
+    .map((override) => `${override.glNumber}:${override.groupKey}:${override.subgroupKey}:${override.updatedAt}`)
+    .join("|");
 }
 
-export function getLedgerGroupingOverrides(scope?: GroupingScope) {
-  return readGroupingStore(scope).overrides;
-}
-
-export function getLedgerGroupingOverrideList(scope?: GroupingScope) {
-  return Object.values(readGroupingStore(scope).overrides).sort((left, right) => left.glNumber.localeCompare(right.glNumber));
-}
-
-export function getMasterGroupingForLedger(glNumber: string, glDescription: string, scope?: GroupingScope) {
-  const entry = loadMasterGroupingSource(scope).lookup[glNumber];
+export async function getMasterGroupingForLedger(glNumber: string, glDescription: string, _scope?: GroupingScope) {
+  const entry = (await loadMasterGroupingSource()).lookup[glNumber];
 
   if (!entry) {
     return null;
@@ -728,13 +603,13 @@ export function getMasterGroupingForLedger(glNumber: string, glDescription: stri
   });
 }
 
-export function getSuggestedGroupingForLedger(input: {
+export async function getSuggestedGroupingForLedger(input: {
   glNumber: string;
   glDescription: string;
   bucket: GroupingBucket;
 }, scope?: GroupingScope) {
   const normalizedDescription = normalizeText(input.glDescription);
-  const options = getLedgerGroupingOptions(scope);
+  const options = await getLedgerGroupingOptions(scope);
   const optionsByKey = new Map(options.map((option) => [option.key, option]));
   const pick = (key: string) => {
     const option = optionsByKey.get(key);
@@ -871,14 +746,14 @@ export function getSuggestedGroupingForLedger(input: {
   return null;
 }
 
-export function saveLedgerGroupingOverride(input: {
+export async function saveLedgerGroupingOverride(input: {
   glNumber: string;
   glDescription: string;
   groupKey: string;
   subgroupKey?: string;
   notes?: string;
 }, scope?: GroupingScope) {
-  const option = getGroupingOption(input.groupKey, scope);
+  const option = await getGroupingOption(input.groupKey, scope);
 
   if (!option) {
     throw new Error(`Unsupported grouping option: ${input.groupKey}`);
@@ -892,10 +767,7 @@ export function saveLedgerGroupingOverride(input: {
     subgroupKey: input.subgroupKey,
   });
 
-  const store = readGroupingStore(scope);
-  const now = new Date().toISOString();
-
-  store.overrides[input.glNumber] = {
+  const override: LedgerGroupingOverride = {
     glNumber: input.glNumber,
     glDescription: input.glDescription,
     groupKey: resolved.key,
@@ -907,24 +779,26 @@ export function saveLedgerGroupingOverride(input: {
     noteNumber: resolved.noteNumber,
     noteTitle: resolved.noteTitle,
     notes: input.notes?.trim() ?? "",
-    updatedAt: now,
+    updatedAt: new Date().toISOString(),
   };
-  store.updatedAt = now;
 
-  writeGroupingStoreScoped(store, scope);
-
-  return store.overrides[input.glNumber];
+  const resolvedScope = resolveScopedWorkspace(scope);
+  return saveLedgerGroupingOverrideToDb(
+    {
+      companyId: resolvedScope.companyId,
+      versionId: resolvedScope.versionId,
+    },
+    override,
+  );
 }
 
-export function deleteLedgerGroupingOverride(glNumber: string, scope?: GroupingScope) {
-  const store = readGroupingStore(scope);
-
-  if (!(glNumber in store.overrides)) {
-    return false;
-  }
-
-  delete store.overrides[glNumber];
-  store.updatedAt = new Date().toISOString();
-  writeGroupingStoreScoped(store, scope);
-  return true;
+export async function deleteLedgerGroupingOverride(glNumber: string, scope?: GroupingScope) {
+  const resolvedScope = resolveScopedWorkspace(scope);
+  return deleteLedgerGroupingOverrideFromDb(
+    {
+      companyId: resolvedScope.companyId,
+      versionId: resolvedScope.versionId,
+    },
+    glNumber,
+  );
 }

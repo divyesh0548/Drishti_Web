@@ -6,8 +6,10 @@ import { getStatementPack, hasStatementValue, type CashFlowRow, type NoteSchedul
 import { getTrialBalanceSnapshot, type LedgerRow } from "@/lib/trial-balance";
 import {
   getCompanySettings,
+  getCompanySlug,
   getCompanyVersionPaths,
   getSharedStatementWorkbookPath,
+  requireActiveCompany,
   resolveWorkspaceContext,
   type CompanySettings,
 } from "@/lib/company-workspace";
@@ -70,7 +72,7 @@ type CachedDerivedWorkbook = {
 };
 
 type WorkbookScope = {
-  companyId?: string;
+  companyId?: number;
   versionId?: string;
 };
 
@@ -377,28 +379,41 @@ function getFileStamp(filePath: string) {
 
 function getDerivedWorkbookDependencyStamp(scope: Required<WorkbookScope>) {
   const versionPaths = getCompanyVersionPaths(scope.companyId, scope.versionId);
-  const companyRoot = path.join(process.cwd(), "data", "companies", scope.companyId);
+  const companyRoot = path.join(process.cwd(), "data", "companies", getCompanySlug(scope.companyId));
 
   return [
     getFileStamp(versionPaths.statementWorkbookPath),
-    getFileStamp(versionPaths.trialBalanceSourcePath),
-    getFileStamp(versionPaths.groupingOverridesPath),
     getFileStamp(path.join(versionPaths.versionDirectory, "ratio-ledger-config.json")),
     getFileStamp(path.join(versionPaths.versionDirectory, "fixed-asset-register.json")),
     getFileStamp(path.join(companyRoot, "settings.json")),
-    getFileStamp(path.join(companyRoot, "logic", "master-groupings.json")),
     getFileStamp(path.join(companyRoot, "versions", "index.json")),
-    getFileStamp(path.join(process.cwd(), "data", "companies", "workspace.json")),
   ].join("|");
 }
 
-function buildDerivedWorkbook(scope?: WorkbookScope) {
+async function buildDerivedWorkbook(scope?: WorkbookScope) {
   const resolvedScope = resolveWorkbookScope(scope);
   const cacheKey = `${resolvedScope.companyId}:${resolvedScope.versionId}`;
-  const dependencyStamp = getDerivedWorkbookDependencyStamp({
-    companyId: resolvedScope.companyId!,
-    versionId: resolvedScope.versionId!,
-  });
+  const context = requireActiveCompany(
+    resolveWorkspaceContext({
+      companyId: resolvedScope.companyId,
+      versionId: resolvedScope.versionId,
+    }),
+  );
+  const pack = await getStatementPack(resolvedScope);
+  const snapshot = await getTrialBalanceSnapshot(resolvedScope);
+  const ledgerStamp = snapshot.rows
+    .map((row) => `${row.glNumber}:${row.currentYear}:${row.previousYear}:${row.groupingKey}:${row.subgroupKey}`)
+    .join("|");
+  const dependencyStamp = [
+    getDerivedWorkbookDependencyStamp({
+      companyId: resolvedScope.companyId!,
+      versionId: resolvedScope.versionId!,
+    }),
+    snapshot.lastModified,
+    String(snapshot.rowCount),
+    snapshot.sourcePath,
+    ledgerStamp,
+  ].join("|");
 
   if (cachedDerivedWorkbook[cacheKey]?.dependencyStamp === dependencyStamp) {
     return cachedDerivedWorkbook[cacheKey].value;
@@ -406,13 +421,7 @@ function buildDerivedWorkbook(scope?: WorkbookScope) {
 
   const raw = readWorkbookFile(getTemplateWorkbookPath(), `template:${cacheKey}`);
   const workbook = read(Buffer.from(raw.buffer), { type: "buffer" });
-  const context = resolveWorkspaceContext({
-    companyId: resolvedScope.companyId,
-    versionId: resolvedScope.versionId,
-  });
   const companyName = context.company.name;
-  const pack = getStatementPack(resolvedScope);
-  const snapshot = getTrialBalanceSnapshot(resolvedScope);
   const reportingDates = getReportingDateLabels(context.currentVersion.financialYear);
   const bsNotes = pack.notes.filter((note) => note.statementArea === "balance-sheet");
   const plNoteTemplateRows = extractSheetRows(workbook.Sheets["PL Notes 20-27"] ?? utils.aoa_to_sheet([]));
@@ -515,7 +524,7 @@ function resolveWorkbookScope(scope?: WorkbookScope) {
     return scope;
   }
 
-  const context = resolveWorkspaceContext();
+  const context = requireActiveCompany(resolveWorkspaceContext());
   return {
     companyId: context.company.id,
     versionId: context.currentVersion.id,
@@ -640,12 +649,12 @@ function defaultCompanySettings() {
   } satisfies CompanySettings;
 }
 
-export function buildV8FinancialModel(scope?: WorkbookScope) {
-  return buildDerivedWorkbook(scope).model;
+export async function buildV8FinancialModel(scope?: WorkbookScope) {
+  return (await buildDerivedWorkbook(scope)).model;
 }
 
-export function getV8WorkbookBuffer(scope?: WorkbookScope) {
-  return buildDerivedWorkbook(scope).buffer;
+export async function getV8WorkbookBuffer(scope?: WorkbookScope) {
+  return (await buildDerivedWorkbook(scope)).buffer;
 }
 
 export function getUploadedWorkbookBuffer(scope?: WorkbookScope) {
@@ -657,6 +666,6 @@ export function shouldPreserveUploadedWorkbookLayout(scope?: WorkbookScope) {
   return hasCustomWorkbookLayout(scope);
 }
 
-export function getV8WorkbookSheet(name: string, scope?: WorkbookScope) {
-  return buildDerivedWorkbook(scope).detailedSheets.find((sheet) => sheet.name === name) ?? null;
+export async function getV8WorkbookSheet(name: string, scope?: WorkbookScope) {
+  return (await buildDerivedWorkbook(scope)).detailedSheets.find((sheet) => sheet.name === name) ?? null;
 }

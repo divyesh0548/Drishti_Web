@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { StatusPill, SummaryLabel } from "@/components/portal/cards";
 import { PortalButton } from "@/components/ui/portal-button";
 import { PortalSelect } from "@/components/ui/portal-select";
+import { usePortalSnackbar } from "@/components/ui/portal-snackbar";
 import type { RatioDefinition } from "@/lib/key-ratios";
 import type { RatioLedgerConfigStore } from "@/lib/ratio-ledger-config";
 import type { LedgerRow } from "@/lib/trial-balance";
@@ -36,16 +37,15 @@ export function RatioLedgerSelectionManager({
   rows: LedgerRow[];
   ratioDefinitions: RatioDefinition[];
   ratioConfig: RatioLedgerConfigStore;
-  companyId: string;
+  companyId: number;
   versionId: string;
   canEdit: boolean;
 }) {
   const router = useRouter();
+  const { showSuccess, showError } = usePortalSnackbar();
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [selectedRatioId, setSelectedRatioId] = useState(ratioDefinitions[0]?.id ?? "");
   const [ratioExclusions, setRatioExclusions] = useState<Record<string, string[]>>(() =>
     Object.fromEntries(ratioDefinitions.map((definition) => [definition.id, ratioConfig.ratios[definition.id]?.excludedGlNumbers ?? []])),
@@ -60,9 +60,6 @@ export function RatioLedgerSelectionManager({
   const ratioSelectedCount = ratioCandidateRows.filter((row) => !selectedRatioExclusions.has(row.glNumber)).length;
 
   const saveRatioSelection = (ratioId: string) => {
-    setMessage(null);
-    setError(null);
-
     startTransition(async () => {
       try {
         const response = await fetch("/api/ratio-ledgers", {
@@ -84,10 +81,10 @@ export function RatioLedgerSelectionManager({
         }
 
         const definition = ratioDefinitions.find((entry) => entry.id === ratioId);
-        setMessage(`Saved ratio ledger selection for ${definition?.label ?? "the selected ratio"}.`);
+        showSuccess(`Saved ratio ledger selection for ${definition?.label ?? "the selected ratio"}.`);
         router.refresh();
       } catch (saveError) {
-        setError(saveError instanceof Error ? saveError.message : "Unable to save ratio ledger selection.");
+        showError(saveError instanceof Error ? saveError.message : "Unable to save ratio ledger selection.");
       }
     });
   };
@@ -126,18 +123,6 @@ export function RatioLedgerSelectionManager({
           ) : null}
         </div>
       </div>
-
-      {message ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-          {message}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
-          {error}
-        </div>
-      ) : null}
 
       {selectedRatio ? (
         <>

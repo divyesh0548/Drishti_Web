@@ -4,7 +4,7 @@ import { xyzExcelProfile } from "@/lib/export/excel/profiles/xyz";
 
 /**
  * Company-specific Excel profiles.
- * Match by `companyIds` (preferred). `excelProfileId` in settings is optional.
- * Companies with no matching profile use the shared V-8 fallback.
+ * Selected by companies.excelProfileId when mapped in Administration.
+ * Slug match is only a fallback when no profile is mapped.
  */
 export const customExcelProfiles: ExcelExportProfile[] = [xyzExcelProfile, ltelExcelProfile];

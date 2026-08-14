@@ -1,30 +1,32 @@
 import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 
+import { parseCompanyId } from "@/lib/company-id";
 import {
+  getCachedCompanies,
   getCompanyVersionPaths,
-  listCompanies,
   listCompanyVersions,
+  requireActiveCompany,
   resolveWorkspaceContext,
   type CompanyRecord,
   type StatementVersionRecord,
 } from "@/lib/company-workspace";
-import { getStatementPack, type StatementDisplayRow } from "@/lib/statement-pack";
+import { getStatementPack, type StatementDisplayRow, type StatementPack } from "@/lib/statement-pack";
 
 type ConsolidationScope = {
-  companyId?: string;
+  companyId?: number;
   versionId?: string;
 };
 
 export type ConsolidationMemberSelection = {
-  companyId: string;
+  companyId: number;
   versionId?: string;
 };
 
 export type ConsolidationElimination = {
   id: string;
-  fromCompanyId: string;
-  toCompanyId: string;
+  fromCompanyId: number;
+  toCompanyId: number;
   description: string;
   statementArea: "balance-sheet" | "profit-and-loss";
   noteNumber: string;
@@ -56,7 +58,7 @@ type NoteAmount = {
 };
 
 export type ConsolidationMemberSummary = {
-  companyId: string;
+  companyId: number;
   companyName: string;
   versionId: string;
   versionLabel: string;
@@ -137,10 +139,12 @@ function formatCurrency(value: number) {
 }
 
 function resolveScope(scope?: ConsolidationScope) {
-  const context = resolveWorkspaceContext({
-    companyId: scope?.companyId,
-    versionId: scope?.versionId,
-  });
+  const context = requireActiveCompany(
+    resolveWorkspaceContext({
+      companyId: scope?.companyId,
+      versionId: scope?.versionId,
+    }),
+  );
 
   return {
     companyId: context.company.id,
@@ -183,40 +187,55 @@ export function getConsolidationConfig(scope?: ConsolidationScope) {
 
   try {
     const parsed = JSON.parse(raw) as RawConsolidationConfig;
-    const companies = new Set(listCompanies().map((company) => company.id));
+    const companies = new Set(getCachedCompanies().map((company) => company.id));
+
+    const members: ConsolidationMemberSelection[] = [];
+    for (const member of parsed.members ?? []) {
+      const companyId = parseCompanyId(member.companyId);
+      if (!companyId || !companies.has(companyId)) {
+        continue;
+      }
+      members.push({
+        companyId,
+        versionId: typeof member.versionId === "string" ? member.versionId : undefined,
+      });
+    }
+
+    const eliminations: ConsolidationElimination[] = [];
+    for (const entry of parsed.eliminations ?? []) {
+      const fromCompanyId = parseCompanyId(entry.fromCompanyId);
+      const toCompanyId = parseCompanyId(entry.toCompanyId);
+      if (
+        !fromCompanyId ||
+        !toCompanyId ||
+        typeof entry.noteNumber !== "string" ||
+        typeof entry.statementArea !== "string" ||
+        typeof entry.lineItem !== "string" ||
+        !companies.has(fromCompanyId) ||
+        !companies.has(toCompanyId)
+      ) {
+        continue;
+      }
+
+      eliminations.push({
+        id: typeof entry.id === "string" ? entry.id : randomUUID(),
+        fromCompanyId,
+        toCompanyId,
+        description: typeof entry.description === "string" ? entry.description : "",
+        statementArea: entry.statementArea === "profit-and-loss" ? "profit-and-loss" : "balance-sheet",
+        noteNumber: entry.noteNumber,
+        lineItem: entry.lineItem,
+        direction: entry.direction === "increase" ? "increase" : "decrease",
+        currentAmount: parseNumber(entry.currentAmount),
+        previousAmount: parseNumber(entry.previousAmount),
+        active: entry.active !== false,
+      });
+    }
 
     return {
       updatedAt: parsed.updatedAt ?? null,
-      members: (parsed.members ?? [])
-        .filter((member): member is ConsolidationMemberSelection => typeof member.companyId === "string" && companies.has(member.companyId))
-        .map((member) => ({
-          companyId: member.companyId,
-          versionId: typeof member.versionId === "string" ? member.versionId : undefined,
-        })),
-      eliminations: (parsed.eliminations ?? [])
-        .filter(
-          (entry): entry is ConsolidationElimination =>
-            typeof entry.fromCompanyId === "string" &&
-            typeof entry.toCompanyId === "string" &&
-            typeof entry.noteNumber === "string" &&
-            typeof entry.statementArea === "string" &&
-            typeof entry.lineItem === "string" &&
-            companies.has(entry.fromCompanyId) &&
-            companies.has(entry.toCompanyId),
-        )
-        .map((entry) => ({
-          id: typeof entry.id === "string" ? entry.id : randomUUID(),
-          fromCompanyId: entry.fromCompanyId,
-          toCompanyId: entry.toCompanyId,
-          description: typeof entry.description === "string" ? entry.description : "",
-          statementArea: entry.statementArea === "profit-and-loss" ? "profit-and-loss" : "balance-sheet",
-          noteNumber: entry.noteNumber,
-          lineItem: entry.lineItem,
-          direction: entry.direction === "increase" ? "increase" : "decrease",
-          currentAmount: parseNumber(entry.currentAmount),
-          previousAmount: parseNumber(entry.previousAmount),
-          active: entry.active !== false,
-        })),
+      members,
+      eliminations,
     } satisfies ConsolidationConfig;
   } catch {
     fs.writeFileSync(configPath, `${JSON.stringify(defaultConsolidationConfig, null, 2)}\n`, "utf8");
@@ -232,42 +251,53 @@ export function saveConsolidationConfig(
   scope?: ConsolidationScope,
 ) {
   const resolved = resolveScope(scope);
-  const companies = listCompanies();
+  const companies = getCachedCompanies();
   const companyLookup = new Set(companies.map((company) => company.id));
-  const members = input.members
-    .filter((member) => member.companyId && member.companyId !== resolved.companyId && companyLookup.has(member.companyId))
-    .map((member) => ({
-      companyId: member.companyId,
+  const members: ConsolidationMemberSelection[] = [];
+  for (const member of input.members) {
+    const companyId = parseCompanyId(member.companyId);
+    if (!companyId || companyId === resolved.companyId || !companyLookup.has(companyId)) {
+      continue;
+    }
+    if (members.some((entry) => entry.companyId === companyId)) {
+      continue;
+    }
+    members.push({
+      companyId,
       versionId: member.versionId?.trim() || undefined,
-    }))
-    .filter((member, index, items) => items.findIndex((candidate) => candidate.companyId === member.companyId) === index);
+    });
+  }
   const eliminations = input.eliminations
-    .filter(
-      (entry) =>
-        typeof entry.fromCompanyId === "string" &&
-        typeof entry.toCompanyId === "string" &&
-        typeof entry.noteNumber === "string" &&
-        typeof entry.lineItem === "string" &&
-        companyLookup.has(entry.fromCompanyId) &&
-        companyLookup.has(entry.toCompanyId),
-    )
-    .map(
-      (entry) =>
-        ({
+    .flatMap((entry) => {
+      const fromCompanyId = parseCompanyId(entry.fromCompanyId);
+      const toCompanyId = parseCompanyId(entry.toCompanyId);
+      if (
+        !fromCompanyId ||
+        !toCompanyId ||
+        typeof entry.noteNumber !== "string" ||
+        typeof entry.lineItem !== "string" ||
+        !companyLookup.has(fromCompanyId) ||
+        !companyLookup.has(toCompanyId)
+      ) {
+        return [];
+      }
+
+      return [
+        {
           id: typeof entry.id === "string" && entry.id.trim() ? entry.id : randomUUID(),
-          fromCompanyId: entry.fromCompanyId!,
-          toCompanyId: entry.toCompanyId!,
+          fromCompanyId,
+          toCompanyId,
           description: typeof entry.description === "string" ? entry.description.trim() : "",
           statementArea: entry.statementArea === "profit-and-loss" ? "profit-and-loss" : "balance-sheet",
-          noteNumber: entry.noteNumber!.trim(),
-          lineItem: entry.lineItem!.trim(),
+          noteNumber: entry.noteNumber.trim(),
+          lineItem: entry.lineItem.trim(),
           direction: entry.direction === "increase" ? "increase" : "decrease",
           currentAmount: parseNumber(entry.currentAmount),
           previousAmount: parseNumber(entry.previousAmount),
           active: entry.active !== false,
-        }) satisfies ConsolidationElimination,
-    )
-    .filter((entry) => entry.noteNumber && entry.lineItem);
+        } satisfies ConsolidationElimination,
+      ];
+    });
 
   const nextConfig: ConsolidationConfig = {
     updatedAt: new Date().toISOString(),
@@ -279,7 +309,7 @@ export function saveConsolidationConfig(
   return nextConfig;
 }
 
-function getNoteAmount(notes: ReturnType<typeof getStatementPack>["notes"], noteNumber: string, title: string, statementArea: "balance-sheet" | "profit-and-loss") {
+function getNoteAmount(notes: StatementPack["notes"], noteNumber: string, title: string, statementArea: "balance-sheet" | "profit-and-loss") {
   const note = notes.find((entry) => entry.noteNumber === noteNumber);
 
   return {
@@ -291,7 +321,7 @@ function getNoteAmount(notes: ReturnType<typeof getStatementPack>["notes"], note
   } satisfies NoteAmount;
 }
 
-function resolveVersionForCompany(companyId: string, requestedVersionId: string | undefined, fallbackVersionId: string) {
+function resolveVersionForCompany(companyId: number, requestedVersionId: string | undefined, fallbackVersionId: string) {
   const versions = listCompanyVersions(companyId);
   return versions.find((version) => version.id === requestedVersionId) ?? versions.find((version) => version.id === fallbackVersionId) ?? versions[0];
 }
@@ -432,38 +462,40 @@ function buildProfitAndLossFromNotes(notes: Map<string, NoteAmount>) {
   };
 }
 
-export function buildConsolidationSnapshot(scope?: ConsolidationScope) {
+export async function buildConsolidationSnapshot(scope?: ConsolidationScope) {
   const resolved = resolveScope(scope);
   const config = getConsolidationConfig(scope);
-  const companyLookup = new Map(listCompanies().map((company) => [company.id, company]));
+  const companyLookup = new Map(getCachedCompanies().map((company) => [company.id, company]));
   const selectedMembers = [
     { companyId: resolved.companyId, versionId: resolved.versionId },
     ...config.members,
   ].filter((member, index, items) => items.findIndex((candidate) => candidate.companyId === member.companyId) === index);
-  const members = selectedMembers
-    .map((member) => {
-      const company = companyLookup.get(member.companyId);
+  const members = (
+    await Promise.all(
+      selectedMembers.map(async (member) => {
+        const company = companyLookup.get(member.companyId);
 
-      if (!company) {
-        return null;
-      }
+        if (!company) {
+          return null;
+        }
 
-      const version = resolveVersionForCompany(company.id, member.versionId, resolved.versionId);
+        const version = resolveVersionForCompany(company.id, member.versionId, resolved.versionId);
 
-      if (!version) {
-        return null;
-      }
+        if (!version) {
+          return null;
+        }
 
-      return {
-        company,
-        version,
-        pack: getStatementPack({
-          companyId: company.id,
-          versionId: version.id,
-        }),
-      };
-    })
-    .filter((member): member is NonNullable<typeof member> => member !== null);
+        return {
+          company,
+          version,
+          pack: await getStatementPack({
+            companyId: company.id,
+            versionId: version.id,
+          }),
+        };
+      }),
+    )
+  ).filter((member): member is NonNullable<typeof member> => member !== null);
 
   const noteMap = new Map<string, NoteAmount>(
     noteDefinitions.map((note) => [
@@ -503,8 +535,8 @@ export function buildConsolidationSnapshot(scope?: ConsolidationScope) {
 
     return {
       ...entry,
-      fromCompanyName: companyLookup.get(entry.fromCompanyId)?.name ?? entry.fromCompanyId,
-      toCompanyName: companyLookup.get(entry.toCompanyId)?.name ?? entry.toCompanyId,
+      fromCompanyName: companyLookup.get(entry.fromCompanyId)?.name ?? String(entry.fromCompanyId),
+      toCompanyName: companyLookup.get(entry.toCompanyId)?.name ?? String(entry.toCompanyId),
     };
   });
 

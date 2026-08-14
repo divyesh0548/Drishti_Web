@@ -1,0 +1,3 @@
+In trial balance sheet add keywords for grouping and subgrouping so it will automatically taking mapping. Client will provide grouping and sub-grouping mapping with GL Number of trail balance sheet.
+
+Make datebase for storing TB data for each company, version wise.

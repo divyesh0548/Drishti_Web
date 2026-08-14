@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser, postAuthenticationPath } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const user = await getAuthenticatedUser();
-  redirect(user ? (user.companyId ? `/dashboard?company=${user.companyId}` : "/dashboard") : "/login");
+  redirect(user ? postAuthenticationPath(user) : "/login");
 }

@@ -2,10 +2,10 @@ import fs from "node:fs";
 
 import { read, utils, type CellObject, type WorkBook, type WorkSheet } from "xlsx";
 
-import { getCompanyVersionPaths, resolveWorkspaceContext } from "@/lib/company-workspace";
+import { getCompanyVersionPaths, requireActiveCompany, resolveWorkspaceContext } from "@/lib/company-workspace";
 
 export type FixedAssetScope = {
-  companyId?: string;
+  companyId?: number;
   versionId?: string;
 };
 
@@ -112,8 +112,8 @@ function resolveScope(scope?: FixedAssetScope) {
 
   const context = resolveWorkspaceContext();
   return {
-    companyId: scope?.companyId ?? context.company.id,
-    versionId: scope?.versionId ?? context.currentVersion.id,
+    companyId: scope?.companyId ?? requireActiveCompany(context).company.id,
+    versionId: scope?.versionId ?? requireActiveCompany(context).currentVersion.id,
   };
 }
 

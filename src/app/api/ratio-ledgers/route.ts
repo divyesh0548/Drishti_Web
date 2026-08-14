@@ -5,7 +5,7 @@ import { readRatioLedgerConfig, saveRatioLedgerSelection } from "@/lib/ratio-led
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceContext(request, {
     companyId: searchParams.get("companyId") ?? undefined,
     versionId: searchParams.get("versionId") ?? undefined,
   });
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "ratioId is required." }, { status: 400 });
   }
 
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceContext(request, {
     companyId: body.companyId,
     versionId: body.versionId,
   });

@@ -1,6 +1,9 @@
-import fs from "node:fs";
-import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { compare, hash } from "bcryptjs";
+import { randomBytes, randomUUID } from "node:crypto";
+import type { User, UserRole } from "@prisma/client";
+
+import { isSmtpConfigured, sendTempPasswordEmail } from "@/lib/mailer";
+import { prisma } from "@/lib/prisma";
 
 export type StoredWorkspaceUserRole = "SITE_ADMIN" | "COMPANY_ADMIN" | "FINANCE" | "AUDITOR";
 
@@ -9,168 +12,256 @@ export type StoredWorkspaceUserRecord = {
   name: string;
   email: string;
   role: StoredWorkspaceUserRole;
-  companyId?: string;
+  companyId?: number;
   isActive: boolean;
+  tempLogin: boolean;
   createdAt: string;
-  password?: string;
 };
 
-type UserRow = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  company_id: string | null;
-  is_active: number;
-  created_at: string;
-  password: string | null;
-};
+const PASSWORD_SALT_ROUNDS = 10;
+const TEMP_PASSWORD_LENGTH = 12;
 
-const databasePath = path.join(process.cwd(), "data", "portal.db");
+let bootstrapPromise: Promise<void> | null = null;
 
-let database: DatabaseSync | null = null;
-
-function ensureDatabaseDirectory() {
-  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
-}
-
-function getDatabase() {
-  if (database) {
-    return database;
-  }
-
-  ensureDatabaseDirectory();
-  database = new DatabaseSync(databasePath);
-  database.exec(`
-    PRAGMA journal_mode = WAL;
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      role TEXT NOT NULL,
-      company_id TEXT,
-      is_active INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL,
-      password TEXT
-    );
-    CREATE INDEX IF NOT EXISTS idx_users_company_id ON users(company_id);
-  `);
-
-  return database;
-}
-
-function mapRow(row: UserRow): StoredWorkspaceUserRecord {
+function mapUser(user: User): StoredWorkspaceUserRecord {
   return {
-    id: row.id,
-    name: row.name,
-    email: row.email,
-    role: row.role as StoredWorkspaceUserRole,
-    companyId: row.company_id ?? undefined,
-    isActive: row.is_active === 1,
-    createdAt: row.created_at,
-    password: row.password ?? undefined,
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    companyId: user.companyId ?? undefined,
+    isActive: user.isActive,
+    tempLogin: user.tempLogin,
+    createdAt: user.createdAt.toISOString(),
   };
 }
 
-export function upsertWorkspaceUsers(users: StoredWorkspaceUserRecord[]) {
-  if (users.length === 0) {
+export async function hashPassword(password: string) {
+  return hash(password, PASSWORD_SALT_ROUNDS);
+}
+
+export async function verifyPassword(password: string, passwordHash: string) {
+  if (!passwordHash.startsWith("$2")) {
+    return false;
+  }
+
+  return compare(password, passwordHash);
+}
+
+function generateTempPassword() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$%";
+  const bytes = randomBytes(TEMP_PASSWORD_LENGTH);
+  let password = "";
+
+  for (let index = 0; index < TEMP_PASSWORD_LENGTH; index += 1) {
+    password += alphabet[bytes[index] % alphabet.length];
+  }
+
+  return password;
+}
+
+function siteAdminEmail() {
+  return process.env.SITE_ADMIN_EMAIL?.trim().toLowerCase() ?? "";
+}
+
+function siteAdminName() {
+  return process.env.SITE_ADMIN_NAME?.trim() || "Site Admin";
+}
+
+async function bootstrapDefaultSiteAdmin() {
+  const email = siteAdminEmail();
+  if (!email) {
+    console.warn("[auth] SITE_ADMIN_EMAIL is not set; skipping default site admin creation.");
     return;
   }
 
-  const db = getDatabase();
-  const statement = db.prepare(`
-    INSERT INTO users (id, name, email, role, company_id, is_active, created_at, password)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(id) DO UPDATE SET
-      name = excluded.name,
-      email = excluded.email,
-      role = excluded.role,
-      company_id = excluded.company_id,
-      is_active = excluded.is_active,
-      created_at = excluded.created_at,
-      password = excluded.password
-  `);
-
-  for (const user of users) {
-    statement.run(
-      user.id,
-      user.name,
-      user.email.trim().toLowerCase(),
-      user.role,
-      user.companyId ?? null,
-      user.isActive ? 1 : 0,
-      user.createdAt,
-      user.password ?? null,
-    );
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    return;
   }
+
+  const tempPassword = generateTempPassword();
+  const name = siteAdminName();
+
+  await prisma.user.create({
+    data: {
+      id: randomUUID(),
+      name,
+      email,
+      passwordHash: await hashPassword(tempPassword),
+      role: "SITE_ADMIN",
+      companyId: null,
+      isActive: true,
+      tempLogin: true,
+    },
+  });
+
+  if (isSmtpConfigured()) {
+    await sendTempPasswordEmail({
+      to: email,
+      name,
+      tempPassword,
+    });
+    console.info(`[auth] Site admin created and temporary password emailed to ${email}.`);
+    return;
+  }
+
+  console.warn(
+    `[auth] Site admin created for ${email}, but SMTP is not configured. Temporary password: ${tempPassword}`,
+  );
 }
 
-export function listWorkspaceUsersByCompany(companyId: string) {
-  const db = getDatabase();
-  const statement = db.prepare(`
-    SELECT id, name, email, role, company_id, is_active, created_at, password
-    FROM users
-    WHERE company_id = ?
-    ORDER BY datetime(created_at) ASC, lower(name) ASC
-  `);
+export async function ensureDefaultSiteAdmin() {
+  if (!bootstrapPromise) {
+    bootstrapPromise = bootstrapDefaultSiteAdmin().catch((error) => {
+      bootstrapPromise = null;
+      throw error;
+    });
+  }
 
-  return statement.all(companyId).map((row) => mapRow(row as UserRow));
+  return bootstrapPromise;
 }
 
-export function listWorkspaceSiteUsers() {
-  const db = getDatabase();
-  const statement = db.prepare(`
-    SELECT id, name, email, role, company_id, is_active, created_at, password
-    FROM users
-    WHERE company_id IS NULL
-    ORDER BY datetime(created_at) ASC, lower(name) ASC
-  `);
-
-  return statement.all().map((row) => mapRow(row as UserRow));
+export async function listWorkspaceUsersByCompany(companyId: number) {
+  await ensureDefaultSiteAdmin();
+  const users = await prisma.user.findMany({
+    where: { companyId },
+    orderBy: [{ createdAt: "asc" }, { name: "asc" }],
+  });
+  return users.map(mapUser);
 }
 
-export function listAllWorkspaceUsers() {
-  const db = getDatabase();
-  const statement = db.prepare(`
-    SELECT id, name, email, role, company_id, is_active, created_at, password
-    FROM users
-    ORDER BY company_id IS NULL DESC, lower(email) ASC
-  `);
-
-  return statement.all().map((row) => mapRow(row as UserRow));
+export async function listWorkspaceSiteUsers() {
+  await ensureDefaultSiteAdmin();
+  const users = await prisma.user.findMany({
+    where: { companyId: null },
+    orderBy: [{ createdAt: "asc" }, { name: "asc" }],
+  });
+  return users.map(mapUser);
 }
 
-export function findWorkspaceUserRecordByEmail(email: string) {
-  const db = getDatabase();
-  const statement = db.prepare(`
-    SELECT id, name, email, role, company_id, is_active, created_at, password
-    FROM users
-    WHERE lower(email) = lower(?)
-    LIMIT 1
-  `);
-  const row = statement.get(email.trim().toLowerCase()) as UserRow | undefined;
-  return row ? mapRow(row) : null;
+export async function listAllWorkspaceUsers() {
+  await ensureDefaultSiteAdmin();
+  const users = await prisma.user.findMany({
+    orderBy: [{ email: "asc" }],
+  });
+  return users.map(mapUser);
 }
 
-export function getWorkspaceUserRecordById(userId: string) {
-  const db = getDatabase();
-  const statement = db.prepare(`
-    SELECT id, name, email, role, company_id, is_active, created_at, password
-    FROM users
-    WHERE id = ?
-    LIMIT 1
-  `);
-  const row = statement.get(userId) as UserRow | undefined;
-  return row ? mapRow(row) : null;
+export async function findWorkspaceUserRecordByEmail(email: string) {
+  await ensureDefaultSiteAdmin();
+  const user = await prisma.user.findUnique({
+    where: { email: email.trim().toLowerCase() },
+  });
+  return user ? mapUser(user) : null;
 }
 
-export function updateWorkspaceUserPasswordById(userId: string, password: string) {
-  const db = getDatabase();
-  const statement = db.prepare(`
-    UPDATE users
-    SET password = ?
-    WHERE id = ?
-  `);
+export async function getWorkspaceUserRecordById(userId: string) {
+  await ensureDefaultSiteAdmin();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+  return user ? mapUser(user) : null;
+}
 
-  statement.run(password, userId);
+export async function getWorkspaceUserWithSecretByEmail(email: string) {
+  await ensureDefaultSiteAdmin();
+  return prisma.user.findUnique({
+    where: { email: email.trim().toLowerCase() },
+  });
+}
+
+export async function createWorkspaceUser(input: {
+  id?: string;
+  name: string;
+  email: string;
+  role: StoredWorkspaceUserRole;
+  companyId?: number;
+  password: string;
+  isActive?: boolean;
+  tempLogin?: boolean;
+}) {
+  await ensureDefaultSiteAdmin();
+  const email = input.email.trim().toLowerCase();
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    throw new Error("A user with this email already exists.");
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      id: input.id ?? randomUUID(),
+      name: input.name.trim(),
+      email,
+      passwordHash: await hashPassword(input.password),
+      role: input.role as UserRole,
+      companyId: input.companyId ?? null,
+      isActive: input.isActive ?? true,
+      tempLogin: input.tempLogin ?? false,
+    },
+  });
+
+  return mapUser(user);
+}
+
+export async function createWorkspaceUserWithEmailedTempPassword(input: {
+  id?: string;
+  name: string;
+  email: string;
+  role: StoredWorkspaceUserRole;
+  companyId?: number;
+  isActive?: boolean;
+}) {
+  if (!isSmtpConfigured()) {
+    throw new Error("SMTP is not configured. A temporary password cannot be emailed to the company admin.");
+  }
+
+  const tempPassword = generateTempPassword();
+  const user = await createWorkspaceUser({
+    ...input,
+    password: tempPassword,
+    tempLogin: true,
+  });
+
+  try {
+    await sendTempPasswordEmail({
+      to: user.email,
+      name: user.name,
+      tempPassword,
+    });
+  } catch {
+    throw new Error("Unable to email the temporary password. Check SMTP settings and try again.");
+  }
+
+  return user;
+}
+
+export async function updateWorkspaceUserPasswordById(userId: string, password: string) {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      passwordHash: await hashPassword(password),
+      tempLogin: false,
+    },
+  });
+
+  return mapUser(user);
+}
+
+export async function changeWorkspaceUserPassword(input: {
+  userId: string;
+  currentPassword: string;
+  nextPassword: string;
+}) {
+  const user = await prisma.user.findUnique({ where: { id: input.userId } });
+  if (!user || !user.isActive) {
+    return null;
+  }
+
+  const matches = await verifyPassword(input.currentPassword, user.passwordHash);
+  if (!matches) {
+    return null;
+  }
+
+  return updateWorkspaceUserPasswordById(user.id, input.nextPassword);
 }

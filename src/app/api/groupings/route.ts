@@ -10,7 +10,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceContext(request, {
     companyId: searchParams.get("companyId") ?? undefined,
     versionId: searchParams.get("versionId") ?? undefined,
   });
@@ -20,9 +20,9 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    options: getLedgerGroupingOptions({ companyId: context.company.id, versionId: context.currentVersion.id }),
+    options: await getLedgerGroupingOptions({ companyId: context.company.id, versionId: context.currentVersion.id }),
     subgroupOptions: getLedgerSubgroupOptions({ companyId: context.company.id, versionId: context.currentVersion.id }),
-    overrides: getLedgerGroupingOverrideList({ companyId: context.company.id, versionId: context.currentVersion.id }),
+    overrides: await getLedgerGroupingOverrideList({ companyId: context.company.id, versionId: context.currentVersion.id }),
   });
 }
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const context = requireRequestWorkspaceContext(request, {
+    const context = await requireRequestWorkspaceContext(request, {
       companyId: body.companyId,
       versionId: body.versionId,
     });
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "You do not have permission to change ledger grouping." }, { status: 403 });
     }
 
-    const override = saveLedgerGroupingOverride({
+    const override = await saveLedgerGroupingOverride({
       glNumber: body.glNumber,
       glDescription: body.glDescription,
       groupKey: body.groupKey,
@@ -88,7 +88,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "glNumber is required." }, { status: 400 });
   }
 
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceContext(request, {
     companyId: body.companyId,
     versionId: body.versionId,
   });
@@ -102,7 +102,7 @@ export async function DELETE(request: Request) {
   }
 
   return NextResponse.json({
-    deleted: deleteLedgerGroupingOverride(body.glNumber, {
+    deleted: await deleteLedgerGroupingOverride(body.glNumber, {
       companyId: context.company.id,
       versionId: context.currentVersion.id,
     }),

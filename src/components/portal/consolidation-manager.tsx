@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import { StatusPill } from "@/components/portal/cards";
 import { PortalButton } from "@/components/ui/portal-button";
 import { PortalSelect } from "@/components/ui/portal-select";
+import { usePortalSnackbar } from "@/components/ui/portal-snackbar";
+import { parseCompanyId } from "@/lib/company-id";
 import type { ConsolidationConfig, ConsolidationElimination } from "@/lib/consolidation";
 
 type CompanyOption = {
-  id: string;
+  id: number;
   name: string;
 };
 
@@ -42,7 +44,7 @@ const noteOptions = [
   ["26", "Tax Expense"],
 ] as const;
 
-function createDraftElimination(parentCompanyId: string, firstMemberCompanyId?: string): DraftElimination {
+function createDraftElimination(parentCompanyId: number, firstMemberCompanyId?: number): DraftElimination {
   return {
     id: `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     fromCompanyId: parentCompanyId,
@@ -66,7 +68,7 @@ export function ConsolidationManager({
   companies,
   canEdit,
 }: {
-  parentCompanyId: string;
+  parentCompanyId: number;
   parentCompanyName: string;
   versionId: string;
   config: ConsolidationConfig;
@@ -74,11 +76,10 @@ export function ConsolidationManager({
   canEdit: boolean;
 }) {
   const router = useRouter();
+  const { showSuccess, showError } = usePortalSnackbar();
   const [activeTab, setActiveTab] = useState<"scope" | "eliminations">("scope");
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedMembers, setSelectedMembers] = useState<string[]>(config.members.map((member) => member.companyId));
+  const [selectedMembers, setSelectedMembers] = useState<number[]>(config.members.map((member) => member.companyId));
   const [eliminations, setEliminations] = useState<DraftElimination[]>(config.eliminations);
 
   const availableCompanies = companies.filter((company) => company.id !== parentCompanyId);
@@ -87,9 +88,6 @@ export function ConsolidationManager({
   const firstMemberCompanyId = selectedMembers[0];
 
   const saveConfig = () => {
-    setMessage(null);
-    setError(null);
-
     startTransition(async () => {
       try {
         const response = await fetch("/api/consolidation", {
@@ -112,10 +110,10 @@ export function ConsolidationManager({
           throw new Error(payload.error ?? "Unable to save consolidation setup.");
         }
 
-        setMessage("Saved consolidation setup.");
+        showSuccess("Saved consolidation setup.");
         router.refresh();
       } catch (saveError) {
-        setError(saveError instanceof Error ? saveError.message : "Unable to save consolidation setup.");
+        showError(saveError instanceof Error ? saveError.message : "Unable to save consolidation setup.");
       }
     });
   };
@@ -151,9 +149,6 @@ export function ConsolidationManager({
           </PortalButton>
         ))}
       </div>
-
-      {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
-      {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
       {activeTab === "scope" ? (
         <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
@@ -229,30 +224,38 @@ export function ConsolidationManager({
                   <tr key={entry.id} className="border-t border-slate-200/70 align-top dark:border-white/10">
                     <td className="px-4 py-3">
                       <PortalSelect
-                        value={entry.fromCompanyId}
+                        value={String(entry.fromCompanyId)}
                         disabled={!canEdit}
                         onChange={(value) =>
                           setEliminations((current) =>
-                            current.map((candidate) => (candidate.id === entry.id ? { ...candidate, fromCompanyId: value } : candidate)),
+                            current.map((candidate) =>
+                              candidate.id === entry.id
+                                ? { ...candidate, fromCompanyId: parseCompanyId(value) ?? candidate.fromCompanyId }
+                                : candidate,
+                            ),
                           )
                         }
                         fullWidth={false}
                         formControlProps={{ sx: { minWidth: 170 } }}
-                        options={includedCompanies.map((company) => ({ value: company.id, label: company.name }))}
+                        options={includedCompanies.map((company) => ({ value: String(company.id), label: company.name }))}
                       />
                     </td>
                     <td className="px-4 py-3">
                       <PortalSelect
-                        value={entry.toCompanyId}
+                        value={String(entry.toCompanyId)}
                         disabled={!canEdit}
                         onChange={(value) =>
                           setEliminations((current) =>
-                            current.map((candidate) => (candidate.id === entry.id ? { ...candidate, toCompanyId: value } : candidate)),
+                            current.map((candidate) =>
+                              candidate.id === entry.id
+                                ? { ...candidate, toCompanyId: parseCompanyId(value) ?? candidate.toCompanyId }
+                                : candidate,
+                            ),
                           )
                         }
                         fullWidth={false}
                         formControlProps={{ sx: { minWidth: 170 } }}
-                        options={includedCompanies.map((company) => ({ value: company.id, label: company.name }))}
+                        options={includedCompanies.map((company) => ({ value: String(company.id), label: company.name }))}
                       />
                     </td>
                     <td className="px-4 py-3">

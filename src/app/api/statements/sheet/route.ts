@@ -13,13 +13,13 @@ export async function GET(request: Request) {
     return Response.json({ error: "Sheet name is required." }, { status: 400 });
   }
 
-  const context = requireRequestWorkspaceContext(request, selection);
+  const context = await requireRequestWorkspaceContext(request, selection);
 
   if (!context) {
     return Response.json({ error: "Authentication required." }, { status: 401 });
   }
 
-  const sheet = getV8WorkbookSheet(name, { companyId: context.company.id, versionId: context.currentVersion.id });
+  const sheet = await getV8WorkbookSheet(name, { companyId: context.company.id, versionId: context.currentVersion.id });
 
   if (!sheet) {
     return Response.json({ error: "Sheet not found." }, { status: 404 });

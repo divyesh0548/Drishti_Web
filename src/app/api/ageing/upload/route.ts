@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "companyId, versionId, kind, and file are required." }, { status: 400 });
   }
 
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceContext(request, {
     companyId,
     versionId,
   });

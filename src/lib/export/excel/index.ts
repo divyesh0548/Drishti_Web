@@ -1,7 +1,8 @@
-import { resolveWorkspaceContext } from "@/lib/company-workspace";
+import { requireActiveCompany, resolveWorkspaceContext } from "@/lib/company-workspace";
 import { resolveExcelExportProfile } from "@/lib/export/excel/registry";
 import { applyReportTableStylesToWorkbookBuffer } from "@/lib/export/excel/report-table-styles";
 import type { ExcelExportContext, ExcelExportResult, ExportScope } from "@/lib/export/excel/types";
+import { prisma } from "@/lib/prisma";
 import { getStatementPack } from "@/lib/statement-pack";
 import { getTrialBalanceSnapshot } from "@/lib/trial-balance";
 
@@ -9,19 +10,27 @@ export type { ExcelExportContext, ExcelExportProfile, ExcelExportResult, ExportS
 export { listExcelExportProfiles, resolveExcelExportProfile } from "@/lib/export/excel/registry";
 export { REPORT_TABLE_COLOR_CONFIG, applyReportTableStyles } from "@/lib/export/excel/report-table-styles";
 
-function buildExportContext(scope: ExportScope = {}): ExcelExportContext {
-  const workspace = resolveWorkspaceContext({
-    companyId: scope.companyId,
-    versionId: scope.versionId,
-  });
-  const pack = getStatementPack({
-    companyId: workspace.company.id,
-    versionId: workspace.currentVersion.id,
-  });
-  const snapshot = getTrialBalanceSnapshot({
-    companyId: workspace.company.id,
-    versionId: workspace.currentVersion.id,
-  });
+async function buildExportContext(scope: ExportScope = {}): Promise<ExcelExportContext> {
+  const workspace = requireActiveCompany(
+    resolveWorkspaceContext({
+      companyId: scope.companyId,
+      versionId: scope.versionId,
+    }),
+  );
+  const [pack, snapshot, companyRow] = await Promise.all([
+    getStatementPack({
+      companyId: workspace.company.id,
+      versionId: workspace.currentVersion.id,
+    }),
+    getTrialBalanceSnapshot({
+      companyId: workspace.company.id,
+      versionId: workspace.currentVersion.id,
+    }),
+    prisma.company.findUnique({
+      where: { id: workspace.company.id },
+      select: { excelProfileId: true },
+    }),
+  ]);
 
   return {
     scope: {
@@ -29,33 +38,34 @@ function buildExportContext(scope: ExportScope = {}): ExcelExportContext {
       versionId: workspace.currentVersion.id,
     },
     companyId: workspace.company.id,
+    companySlug: workspace.company.slug,
     companyName: workspace.company.name,
     versionId: workspace.currentVersion.id,
     financialYear: workspace.currentVersion.financialYear,
     pack,
     snapshot,
-    excelProfileId: workspace.settings.excelProfileId,
+    excelProfileId: (companyRow ? companyRow.excelProfileId : workspace.company.excelProfileId ?? workspace.settings.excelProfileId) ?? undefined,
   };
 }
 
 /**
  * Build the Excel statement workbook for a company/version.
- * Uses a company-specific profile when registered; otherwise the shared V-8 fallback.
+ * Uses the site-admin mapped Excel structure profile when set; otherwise the shared V-8 fallback.
  * Header/total background colors are applied for every company.
  * Template-copy profiles keep base layout (colors only; no column autofit/clamp).
  * PDF export stays on the common renderer.
  */
-export function buildStatementWorkbook(scope?: ExportScope): Buffer {
-  return buildStatementWorkbookExport(scope).buffer;
+export async function buildStatementWorkbook(scope?: ExportScope): Promise<Buffer> {
+  return (await buildStatementWorkbookExport(scope)).buffer;
 }
 
-export function buildStatementWorkbookExport(scope?: ExportScope): ExcelExportResult {
-  const context = buildExportContext(scope);
+export async function buildStatementWorkbookExport(scope?: ExportScope): Promise<ExcelExportResult> {
+  const context = await buildExportContext(scope);
   const profile = resolveExcelExportProfile({
-    companyId: context.companyId,
+    companySlug: context.excelProfileId ? undefined : context.companySlug,
     excelProfileId: context.excelProfileId,
   });
-  const rawBuffer = profile.build(context);
+  const rawBuffer = await profile.build(context);
   const buffer = applyReportTableStylesToWorkbookBuffer(rawBuffer, {
     colorsOnly: Boolean(profile.preserveTemplateStyles),
   });

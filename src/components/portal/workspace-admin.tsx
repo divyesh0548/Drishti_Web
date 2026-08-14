@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { PortalButton } from "@/components/ui/portal-button";
 import { PortalSelect } from "@/components/ui/portal-select";
+import { usePortalSnackbar } from "@/components/ui/portal-snackbar";
 import type { CompanySettings, WorkspaceContext } from "@/lib/company-workspace";
+import { excelProfileSelectOptions } from "@/lib/export/excel/profile-options";
 
 type UserRole = "COMPANY_ADMIN" | "FINANCE" | "AUDITOR";
 
@@ -17,15 +19,13 @@ export function WorkspaceAdmin({
   const isSiteAdmin = context.currentUser.role === "SITE_ADMIN";
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { showSuccess, showError } = usePortalSnackbar();
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [companyForm, setCompanyForm] = useState({
     name: "",
     code: "",
     adminName: "",
     adminEmail: "",
-    adminPassword: "",
   });
   const [userForm, setUserForm] = useState<{ name: string; email: string; password: string; role: UserRole }>({
     name: "",
@@ -40,9 +40,6 @@ export function WorkspaceAdmin({
   };
 
   const createCompany = () => {
-    setMessage(null);
-    setError(null);
-
     startTransition(async () => {
       const response = await fetch("/api/workspace/companies", {
         method: "POST",
@@ -54,26 +51,30 @@ export function WorkspaceAdmin({
           code: companyForm.code,
           adminName: companyForm.adminName,
           adminEmail: companyForm.adminEmail,
-          adminPassword: companyForm.adminPassword,
         }),
       });
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        setError(payload.error ?? "Unable to create company.");
+        showError(payload.error ?? "Unable to create company.");
         return;
       }
 
-      setMessage("Company and company admin created.");
-      setCompanyForm({ name: "", code: "", adminName: "", adminEmail: "", adminPassword: "" });
+      const payload = (await response.json()) as { company?: { id: number } };
+      showSuccess("Company created. A temporary password was emailed to the company admin.");
+      setCompanyForm({ name: "", code: "", adminName: "", adminEmail: "" });
+
+      if (payload.company?.id) {
+        router.push(`/admin?company=${payload.company.id}`);
+        router.refresh();
+        return;
+      }
+
       refresh();
     });
   };
 
   const createUser = () => {
-    setMessage(null);
-    setError(null);
-
     startTransition(async () => {
       const response = await fetch("/api/workspace/users", {
         method: "POST",
@@ -81,27 +82,24 @@ export function WorkspaceAdmin({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          companyId: context.company.id,
+          companyId: context.company?.id,
           ...userForm,
         }),
       });
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        setError(payload.error ?? "Unable to create user.");
+        showError(payload.error ?? "Unable to create user.");
         return;
       }
 
-      setMessage("Company user created.");
+      showSuccess("Company user created.");
       setUserForm({ name: "", email: "", password: "", role: "FINANCE" });
       refresh();
     });
   };
 
   const saveSettings = () => {
-    setMessage(null);
-    setError(null);
-
     startTransition(async () => {
       const response = await fetch("/api/workspace/settings", {
         method: "POST",
@@ -109,18 +107,46 @@ export function WorkspaceAdmin({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          companyId: context.company.id,
-          ...settingsForm,
+          companyId: context.company?.id,
+          reportingCurrency: settingsForm.reportingCurrency,
+          unitsLabel: settingsForm.unitsLabel,
+          footerNote: settingsForm.footerNote,
+          directors: settingsForm.directors,
+          auditors: settingsForm.auditors,
         }),
       });
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        setError(payload.error ?? "Unable to save company settings.");
+        showError(payload.error ?? "Unable to save company settings.");
         return;
       }
 
-      setMessage("Company signatories and footer settings saved.");
+      showSuccess("Company signatories and footer settings saved.");
+      refresh();
+    });
+  };
+
+  const saveExcelProfile = (companyId: number, excelProfileId: string) => {
+    startTransition(async () => {
+      const response = await fetch("/api/workspace/companies", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          companyId,
+          excelProfileId: excelProfileId || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        showError(payload.error ?? "Unable to map Excel structure profile.");
+        return;
+      }
+
+      showSuccess("Excel structure profile mapped to the company.");
       refresh();
     });
   };
@@ -162,14 +188,11 @@ export function WorkspaceAdmin({
 
   return (
     <div className="space-y-6">
-      {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
-      {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
-
       {context.permissions.canManageCompanies ? (
         <div className="rounded-[1.75rem] border border-slate-200/70 bg-white/80 p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/70">
           <h3 className="text-lg font-semibold">Create company</h3>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Create the company and set the initial company admin login in one step.
+            Create the company and company admin. A temporary password will be emailed to the admin, who must change it on first login.
           </p>
           <div className="mt-4 grid gap-3 xl:grid-cols-2">
             <input
@@ -192,16 +215,10 @@ export function WorkspaceAdmin({
             />
             <input
               className="field-input"
+              type="email"
               value={companyForm.adminEmail}
               onChange={(event) => setCompanyForm((current) => ({ ...current, adminEmail: event.target.value }))}
-              placeholder="Company admin username / email"
-            />
-            <input
-              className="field-input"
-              type="password"
-              value={companyForm.adminPassword}
-              onChange={(event) => setCompanyForm((current) => ({ ...current, adminPassword: event.target.value }))}
-              placeholder="Company admin password"
+              placeholder="Company admin email"
             />
           </div>
           <PortalButton
@@ -212,8 +229,7 @@ export function WorkspaceAdmin({
               !companyForm.name ||
               !companyForm.code ||
               !companyForm.adminName ||
-              !companyForm.adminEmail ||
-              !companyForm.adminPassword
+              !companyForm.adminEmail
             }
             onClick={createCompany}
             className="mt-4"
@@ -227,30 +243,45 @@ export function WorkspaceAdmin({
         <div className="rounded-[1.75rem] border border-slate-200/70 bg-white/80 p-5 shadow-sm dark:border-white/10 dark:bg-slate-950/70">
           <h3 className="text-lg font-semibold">Companies</h3>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Site admin access is limited here to company provisioning. Company-level user and reporting settings are now managed by the company admin.
+            Provision companies and map each one to a single Excel structural report profile. Leave Shared V-8 for the default layout.
           </p>
-          <div className="mt-4 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 text-sm text-slate-600 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-300">
-            Trial balance versions, ledger groupings, and statement customizations remain company specific. For demo flows, the site admin can still switch companies from the top bar and review each company workspace separately.
-          </div>
           <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200/70 dark:border-white/10">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                 <tr>
                   <th className="px-4 py-3 font-medium">Company</th>
                   <th className="px-4 py-3 font-medium">Code</th>
+                  <th className="px-4 py-3 font-medium">Excel structure profile</th>
                   <th className="px-4 py-3 font-medium">Updated</th>
                 </tr>
               </thead>
               <tbody>
-                {context.companies.map((company) => (
-                  <tr key={company.id} className="border-t border-slate-200/70 dark:border-white/10">
-                    <td className="px-4 py-3 font-medium">{company.name}</td>
-                    <td className="px-4 py-3">{company.code}</td>
-                    <td className="px-4 py-3">
-                      {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(company.updatedAt))}
+                {context.companies.length === 0 ? (
+                  <tr>
+                    <td className="px-4 py-3 text-slate-500" colSpan={4}>
+                      No companies yet. Create one above to start a workspace.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  context.companies.map((company) => (
+                    <tr key={company.id} className="border-t border-slate-200/70 dark:border-white/10">
+                      <td className="px-4 py-3 font-medium">{company.name}</td>
+                      <td className="px-4 py-3">{company.code}</td>
+                      <td className="px-4 py-3">
+                        <PortalSelect
+                          value={company.excelProfileId ?? ""}
+                          onChange={(value) => saveExcelProfile(company.id, value)}
+                          options={[...excelProfileSelectOptions]}
+                          formControlProps={{ sx: { minWidth: 240, maxWidth: 320 } }}
+                          disabled={isPending}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(company.updatedAt))}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -267,7 +298,7 @@ export function WorkspaceAdmin({
                   Company admins can create finance and auditor users and define their login passwords.
                 </p>
               </div>
-              {query ? <p className="text-xs uppercase tracking-[0.08em] text-slate-500">{context.company.name}</p> : null}
+              {query ? <p className="text-xs uppercase tracking-[0.08em] text-slate-500">{context.company?.name}</p> : null}
             </div>
 
             {context.permissions.canManageCompanyUsers ? (
@@ -305,7 +336,7 @@ export function WorkspaceAdmin({
             <PortalButton
               variant="primary"
               type="button"
-              disabled={isPending || !userForm.name || !userForm.email || !userForm.password}
+              disabled={isPending || !context.company || !userForm.name || !userForm.email || !userForm.password}
               onClick={createUser}
             >
               Add user

@@ -5,17 +5,17 @@ import { useRouter } from "next/navigation";
 import { CloudUpload, FileSpreadsheet, History, Sparkles } from "lucide-react";
 
 import { PortalButton } from "@/components/ui/portal-button";
-import type { StatementVersionRecord, WorkspaceContext } from "@/lib/company-workspace";
+import { usePortalSnackbar } from "@/components/ui/portal-snackbar";
+import type { CompanyWorkspaceContext, StatementVersionRecord } from "@/lib/company-workspace";
 
 export function VersionManager({
   context,
 }: {
-  context: WorkspaceContext;
+  context: CompanyWorkspaceContext;
 }) {
   const router = useRouter();
+  const { showSuccess, showError } = usePortalSnackbar();
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [label, setLabel] = useState("");
   const [financialYear, setFinancialYear] = useState("");
   const [trialBalanceFile, setTrialBalanceFile] = useState<File | null>(null);
@@ -38,17 +38,14 @@ export function VersionManager({
   };
 
   const createVersion = () => {
-    setMessage(null);
-    setError(null);
-
     if (!trialBalanceFile) {
-      setError("Please select a trial balance workbook to upload.");
+      showError("Please select a trial balance workbook to upload.");
       return;
     }
 
     startTransition(async () => {
       const formData = new FormData();
-      formData.set("companyId", context.company.id);
+      formData.set("companyId", String(context.company.id));
       formData.set("label", label);
       formData.set("financialYear", financialYear);
 
@@ -68,16 +65,16 @@ export function VersionManager({
       const payload = await readResponsePayload(response);
 
       if (!response.ok) {
-        setError(payload.error ?? "Unable to create statement version.");
+        showError(payload.error ?? "Unable to create statement version.");
         return;
       }
 
       if (!payload.version) {
-        setError("Upload finished but the version response was incomplete.");
+        showError("Upload finished but the version response was incomplete.");
         return;
       }
 
-      setMessage(`Trial balance uploaded to ${payload.version.label}.`);
+      showSuccess(`Trial balance uploaded to ${payload.version.label}.`);
       setLabel("");
       setFinancialYear("");
       setTrialBalanceFile(null);
@@ -89,9 +86,6 @@ export function VersionManager({
 
   return (
     <div className="space-y-5">
-      {message ? <div className="rounded-[1.2rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/12 dark:text-emerald-300">{message}</div> : null}
-      {error ? <div className="rounded-[1.2rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/12 dark:text-rose-300">{error}</div> : null}
-
       {context.permissions.canUploadTrialBalance ? (
         <div className="enterprise-shell-card overflow-hidden">
           <div className="border-b border-slate-200/70 bg-gradient-to-r from-white to-blue-50/70 px-5 py-4 dark:border-white/10 dark:from-slate-950 dark:to-blue-950/20">
@@ -103,7 +97,9 @@ export function VersionManager({
                 </div>
                 <h3 className="mt-3 text-lg font-semibold text-slate-950 dark:text-slate-50">Upload trial balance and create version</h3>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Upload a trial balance workbook for the next company-specific version. The TB is stored inside that company version folder, and statement downloads are generated from the shared V-8 template for every company.
+                  {context.versions.length === 0
+                    ? "Upload a trial balance to create Version 1. Mapping, statements, and reports unlock after that."
+                    : "Upload a trial balance workbook for the next company-specific version. The TB is stored inside that company version folder."}
                 </p>
               </div>
               <div className="grid gap-2 md:grid-cols-3">
@@ -164,30 +160,36 @@ export function VersionManager({
           </div>
         </div>
         <div className="space-y-3 px-5 py-4">
-          {context.versions.map((version: StatementVersionRecord) => (
-            <div
-              key={version.id}
-              className="rounded-xl border border-slate-200/70 bg-slate-50/70 px-4 py-3 dark:border-white/10 dark:bg-slate-900/55"
-            >
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0">
-                  <p className="font-semibold text-slate-950 dark:text-slate-50">{version.label}</p>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{version.financialYear}</p>
-                </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(version.createdAt))}
-                </p>
-              </div>
-              <div className="mt-3 grid gap-2 text-sm text-slate-600 dark:text-slate-300 md:grid-cols-2">
-                <p className="truncate" title={version.trialBalanceWorkbookName}>
-                  Trial balance: <span className="font-medium text-slate-800 dark:text-slate-100">{version.trialBalanceWorkbookName}</span>
-                </p>
-                <p className="truncate" title={version.statementWorkbookName}>
-                  Reference workbook: <span className="font-medium text-slate-800 dark:text-slate-100">{version.statementWorkbookName}</span>
-                </p>
-              </div>
+          {context.versions.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-200/80 bg-slate-50/70 px-4 py-6 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-900/55 dark:text-slate-400">
+              No versions yet. Upload a trial balance above to create the first version for this company.
             </div>
-          ))}
+          ) : (
+            context.versions.map((version: StatementVersionRecord) => (
+              <div
+                key={version.id}
+                className="rounded-xl border border-slate-200/70 bg-slate-50/70 px-4 py-3 dark:border-white/10 dark:bg-slate-900/55"
+              >
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-950 dark:text-slate-50">{version.label}</p>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{version.financialYear}</p>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(version.createdAt))}
+                  </p>
+                </div>
+                <div className="mt-3 grid gap-2 text-sm text-slate-600 dark:text-slate-300 md:grid-cols-2">
+                  <p className="truncate" title={version.trialBalanceWorkbookName}>
+                    Trial balance: <span className="font-medium text-slate-800 dark:text-slate-100">{version.trialBalanceWorkbookName}</span>
+                  </p>
+                  <p className="truncate" title={version.statementWorkbookName}>
+                    Reference workbook: <span className="font-medium text-slate-800 dark:text-slate-100">{version.statementWorkbookName}</span>
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

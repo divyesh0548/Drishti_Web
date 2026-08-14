@@ -10,7 +10,7 @@ export default async function WorkflowPage({
 }) {
   const context = await resolveWorkspaceContextFromSearchParams(searchParams ? await searchParams : undefined);
   assertRouteAccess(context.currentUser.role, "/workflow");
-  const snapshot = getTrialBalanceSnapshot({
+  const snapshot = await getTrialBalanceSnapshot({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
   });

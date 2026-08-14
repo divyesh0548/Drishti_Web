@@ -1,15 +1,24 @@
 import fs from "node:fs";
+import type { Company } from "@prisma/client";
+import { parseCompanyId } from "@/lib/company-id";
+import { isRegisteredExcelProfileId } from "@/lib/export/excel/profile-options";
+import { prisma } from "@/lib/prisma";
+import { persistTrialBalanceVersionToDb } from "@/lib/trial-balance-database";
 import {
+  changeWorkspaceUserPassword,
+  createWorkspaceUser,
+  createWorkspaceUserWithEmailedTempPassword,
   findWorkspaceUserRecordByEmail,
   getWorkspaceUserRecordById,
+  getWorkspaceUserWithSecretByEmail,
   listAllWorkspaceUsers,
   listWorkspaceSiteUsers,
   listWorkspaceUsersByCompany,
   updateWorkspaceUserPasswordById,
-  upsertWorkspaceUsers,
+  verifyPassword,
+  type StoredWorkspaceUserRecord,
 } from "@/lib/user-database";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
 
 import { read, utils, writeFile } from "xlsx";
 
@@ -20,21 +29,20 @@ export type WorkspaceUser = {
   name: string;
   email: string;
   role: WorkspaceUserRole;
-  companyId?: string;
+  companyId?: number;
   isActive: boolean;
+  tempLogin: boolean;
   createdAt: string;
 };
 
-type WorkspaceUserRecord = WorkspaceUser & {
-  password?: string;
-};
-
 export type CompanyRecord = {
-  id: string;
+  id: number;
   slug: string;
   name: string;
   code: string;
   defaultVersionId: string;
+  /** One Excel structural profile id, or empty for shared V-8. */
+  excelProfileId?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -76,7 +84,7 @@ export type StatementVersionRecord = {
 
 export type VersionDetailsRecord = {
   versionId: string;
-  companyId: string;
+  companyId: number;
   label: string;
   financialYear: string;
   versionNumber: number;
@@ -108,20 +116,14 @@ export type TrialBalanceSourceData = {
   rows: TrialBalanceSourceRow[];
 };
 
-type WorkspaceIndex = {
-  defaultCompanyId: string | null;
-  siteUsers: WorkspaceUserRecord[];
-  companies: CompanyRecord[];
-};
-
 export type WorkspaceContext = {
   companies: CompanyRecord[];
-  company: CompanyRecord;
+  company: CompanyRecord | null;
   companyUsers: WorkspaceUser[];
   selectableUsers: WorkspaceUser[];
   currentUser: WorkspaceUser;
   versions: StatementVersionRecord[];
-  currentVersion: StatementVersionRecord;
+  currentVersion: StatementVersionRecord | null;
   settings: CompanySettings;
   permissions: {
     canManageCompanies: boolean;
@@ -134,10 +136,17 @@ export type WorkspaceContext = {
   };
 };
 
+export type ActiveWorkspaceContext = WorkspaceContext & {
+  company: CompanyRecord;
+  currentVersion: StatementVersionRecord;
+};
+
+export type CompanyWorkspaceContext = WorkspaceContext & {
+  company: CompanyRecord;
+};
+
 const workspaceRoot = path.join(process.cwd(), "data", "companies");
-const workspaceIndexPath = path.join(workspaceRoot, "workspace.json");
 const defaultStatementWorkbookPath = path.join(process.cwd(), "V-8.xlsx");
-const defaultGroupingJsonPath = path.join(process.cwd(), "data", "master-groupings.json");
 const defaultGroupingWorkbookPath = path.join(process.cwd(), "Master Grouping File.xlsx");
 const rolePasswordDefaults: Record<WorkspaceUserRole, string> = {
   SITE_ADMIN: "Admin@123",
@@ -145,7 +154,6 @@ const rolePasswordDefaults: Record<WorkspaceUserRole, string> = {
   FINANCE: "Finance@123",
   AUDITOR: "Audit@123",
 };
-let lastUserSyncStamp: string | null = null;
 
 function slugify(value: string) {
   return value
@@ -173,14 +181,7 @@ function readJsonFile<T>(filePath: string, fallback: T): T {
   }
 }
 
-function withPassword(user: WorkspaceUserRecord): WorkspaceUserRecord {
-  return {
-    ...user,
-    password: user.password?.trim() || rolePasswordDefaults[user.role],
-  };
-}
-
-function withoutPassword(user: WorkspaceUserRecord): WorkspaceUser {
+function toWorkspaceUser(user: StoredWorkspaceUserRecord): WorkspaceUser {
   return {
     id: user.id,
     name: user.name,
@@ -188,6 +189,7 @@ function withoutPassword(user: WorkspaceUserRecord): WorkspaceUser {
     role: user.role,
     companyId: user.companyId,
     isActive: user.isActive,
+    tempLogin: user.tempLogin,
     createdAt: user.createdAt,
   };
 }
@@ -264,31 +266,70 @@ function parseTrialBalanceWorkbookBuffer(buffer: Buffer, sourceName: string, sou
   };
 }
 
-function getCompanyDirectory(companyId: string) {
-  return path.join(workspaceRoot, companyId);
+function getCompanyDirectoryBySlug(slug: string) {
+  return path.join(workspaceRoot, slug);
 }
 
-function getCompanyUsersPath(companyId: string) {
-  return path.join(getCompanyDirectory(companyId), "users.json");
+let companyCache: CompanyRecord[] = [];
+
+function mapCompany(row: Company): CompanyRecord {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    code: row.code,
+    defaultVersionId: row.defaultVersionId ?? "v1",
+    excelProfileId: row.excelProfileId ?? undefined,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
 }
 
-function getCompanySettingsPath(companyId: string) {
+function rememberCompanies(companies: CompanyRecord[]) {
+  companyCache = companies;
+  return companyCache;
+}
+
+export async function loadCompaniesFromDb() {
+  const rows = await prisma.company.findMany({
+    orderBy: { id: "asc" },
+  });
+  return rememberCompanies(rows.map(mapCompany));
+}
+
+function findCompanyRecord(companyId: number) {
+  return companyCache.find((company) => company.id === companyId);
+}
+
+export function getCompanySlug(companyId: number) {
+  const company = findCompanyRecord(companyId);
+  if (!company) {
+    throw new Error(`Unknown company id ${companyId}.`);
+  }
+  return company.slug;
+}
+
+function getCompanyDirectory(companyId: number) {
+  return getCompanyDirectoryBySlug(getCompanySlug(companyId));
+}
+
+function getCompanySettingsPath(companyId: number) {
   return path.join(getCompanyDirectory(companyId), "settings.json");
 }
 
-function getCompanyVersionsIndexPath(companyId: string) {
+function getCompanyVersionsIndexPath(companyId: number) {
   return path.join(getCompanyDirectory(companyId), "versions", "index.json");
 }
 
-function getCompanyLogicDirectory(companyId: string) {
+function getCompanyLogicDirectory(companyId: number) {
   return path.join(getCompanyDirectory(companyId), "logic");
 }
 
-function getCompanyVersionDirectory(companyId: string, versionId: string) {
+function getCompanyVersionDirectory(companyId: number, versionId: string) {
   return path.join(getCompanyDirectory(companyId), "versions", versionId);
 }
 
-export function getCompanyVersionPaths(companyId: string, versionId: string) {
+export function getCompanyVersionPaths(companyId: number, versionId: string) {
   const versionDirectory = getCompanyVersionDirectory(companyId, versionId);
 
   return {
@@ -311,19 +352,16 @@ export function getSharedStatementWorkbookPath() {
   return defaultStatementWorkbookPath;
 }
 
-export function getCompanyLogicPaths(companyId: string) {
+export function getCompanyLogicPaths(companyId: number) {
   const logicDirectory = getCompanyLogicDirectory(companyId);
   ensureDirectory(logicDirectory);
 
-  const masterGroupingSourcePath = path.join(logicDirectory, "master-groupings.json");
   const masterGroupingWorkbookPath = path.join(logicDirectory, "Master Grouping File.xlsx");
 
-  copyFileIfMissing(defaultGroupingJsonPath, masterGroupingSourcePath);
   copyFileIfMissing(defaultGroupingWorkbookPath, masterGroupingWorkbookPath);
 
   return {
     logicDirectory,
-    masterGroupingSourcePath,
     masterGroupingWorkbookPath,
   };
 }
@@ -347,413 +385,185 @@ function defaultSettings(): CompanySettings {
   };
 }
 
-function defaultSiteAdmin(): WorkspaceUser {
+function readCompanySettings(companyId: number) {
+  const fileSettings = readJsonFile<CompanySettings>(getCompanySettingsPath(companyId), defaultSettings());
+  const company = findCompanyRecord(companyId);
+
   return {
-    id: "site-admin",
-    name: "Shivam Chaturvedi",
-    email: "siteadmin@fingen.local",
-    role: "SITE_ADMIN",
-    isActive: true,
-    createdAt: new Date("2026-07-24T00:00:00.000Z").toISOString(),
+    ...fileSettings,
+    excelProfileId: company?.excelProfileId ?? fileSettings.excelProfileId,
   };
 }
 
-function defaultSiteAdminRecord(): WorkspaceUserRecord {
-  return {
-    ...defaultSiteAdmin(),
-    password: rolePasswordDefaults.SITE_ADMIN,
-  };
-}
-
-function readWorkspaceIndex() {
-  ensureDirectory(workspaceRoot);
-  return readJsonFile<WorkspaceIndex>(workspaceIndexPath, {
-    defaultCompanyId: null,
-    siteUsers: [defaultSiteAdminRecord()],
-    companies: [],
-  });
-}
-
-function writeWorkspaceIndex(index: WorkspaceIndex) {
-  writeJsonFile(workspaceIndexPath, index);
-}
-
-function getUserSyncStamp(index: WorkspaceIndex) {
-  const fileStamp = (filePath: string) => {
-    try {
-      const stats = fs.statSync(filePath);
-      return `${filePath}:${stats.mtimeMs}:${stats.size}`;
-    } catch {
-      return `${filePath}:missing`;
-    }
-  };
-
-  return [
-    fileStamp(workspaceIndexPath),
-    ...index.companies.map((company) => fileStamp(getCompanyUsersPath(company.id))),
-  ].join("|");
-}
-
-function syncUsersDatabase(index: WorkspaceIndex) {
-  const nextStamp = getUserSyncStamp(index);
-
-  if (lastUserSyncStamp === nextStamp) {
-    return;
-  }
-
-  const siteUsers = index.siteUsers.map(withPassword);
-  const companyUsers = index.companies.flatMap((company) =>
-    readJsonFile<WorkspaceUserRecord[]>(getCompanyUsersPath(company.id), []).map(withPassword),
-  );
-
-  upsertWorkspaceUsers([...siteUsers, ...companyUsers]);
-  lastUserSyncStamp = nextStamp;
-}
-
-function readCompanyUsers(companyId: string) {
-  const databaseUsers = listWorkspaceUsersByCompany(companyId).map(withPassword);
-
-  if (databaseUsers.length > 0) {
-    return databaseUsers;
-  }
-
-  const fileUsers = readJsonFile<WorkspaceUserRecord[]>(getCompanyUsersPath(companyId), []).map(withPassword);
-
-  if (fileUsers.length > 0) {
-    upsertWorkspaceUsers(fileUsers);
-  }
-
-  return fileUsers;
-}
-
-function writeCompanyUsers(companyId: string, users: WorkspaceUserRecord[]) {
-  writeJsonFile(getCompanyUsersPath(companyId), users);
-  upsertWorkspaceUsers(users.map(withPassword));
-}
-
-function readCompanySettings(companyId: string) {
-  return readJsonFile<CompanySettings>(getCompanySettingsPath(companyId), defaultSettings());
-}
-
-function writeCompanySettings(companyId: string, settings: CompanySettings) {
+function writeCompanySettings(companyId: number, settings: CompanySettings) {
   writeJsonFile(getCompanySettingsPath(companyId), settings);
 }
 
-function readCompanyVersions(companyId: string) {
+function readCompanyVersions(companyId: number) {
   return readJsonFile<StatementVersionRecord[]>(getCompanyVersionsIndexPath(companyId), []);
 }
 
-function writeCompanyVersions(companyId: string, versions: StatementVersionRecord[]) {
+function writeCompanyVersions(companyId: number, versions: StatementVersionRecord[]) {
   writeJsonFile(getCompanyVersionsIndexPath(companyId), versions);
 }
 
-function seedInitialVersion(companyId: string, createdByUserId: string) {
-  const versionId = "v1";
-  const versionDirectory = getCompanyVersionDirectory(companyId, versionId);
-  const paths = getCompanyVersionPaths(companyId, versionId);
-
-  ensureDirectory(versionDirectory);
-  writeBlankTrialBalanceWorkbook(paths.trialBalanceWorkbookPath);
-  copyFileIfMissing(defaultStatementWorkbookPath, paths.statementWorkbookPath);
-
-  if (!fs.existsSync(paths.trialBalanceSourcePath)) {
-    writeJsonFile(paths.trialBalanceSourcePath, buildEmptyTrialBalanceSourceData(paths.trialBalanceWorkbookPath));
-  }
-
-  if (!fs.existsSync(paths.groupingOverridesPath)) {
-    writeJsonFile(paths.groupingOverridesPath, {
-      updatedAt: null,
-      overrides: {},
-    });
-  }
-
-  if (!fs.existsSync(paths.consolidationConfigPath)) {
-    writeJsonFile(paths.consolidationConfigPath, {
-      updatedAt: null,
-      members: [],
-      eliminations: [],
-    });
-  }
-
-  if (!fs.existsSync(paths.ratioLedgerConfigPath)) {
-    writeJsonFile(paths.ratioLedgerConfigPath, {
-      updatedAt: null,
-      ratios: {},
-    });
-  }
-
-  if (!fs.existsSync(paths.ageingConfigPath)) {
-    writeJsonFile(paths.ageingConfigPath, {
-      updatedAt: null,
-      asOfDate: "2026-03-31",
-      ageGroups: [
-        { id: "not-due", label: "Not Due", minDays: null, maxDays: -1 },
-        { id: "0-180", label: "0-180 days", minDays: 0, maxDays: 180 },
-        { id: "181-365", label: "181-365 days", minDays: 181, maxDays: 365 },
-        { id: "366-730", label: "366-730 days", minDays: 366, maxDays: 730 },
-        { id: "731-plus", label: "More than 730 days", minDays: 731, maxDays: null },
-      ],
-      uploads: {
-        receivables: {
-          sourceName: null,
-          uploadedAt: null,
-          entries: [],
-        },
-        payables: {
-          sourceName: null,
-          uploadedAt: null,
-          entries: [],
-        },
-      },
-    });
-  }
-
-  if (!fs.existsSync(paths.fixedAssetRegisterConfigPath)) {
-    writeJsonFile(paths.fixedAssetRegisterConfigPath, {
-      updatedAt: null,
-      upload: {
-        sourceName: null,
-        uploadedAt: null,
-      },
-      schedules: {
-        ppe: [],
-        cwip: [],
-        intangible: [],
-        rou: [],
-      },
-    });
-  }
-
-  return {
-    id: versionId,
-    label: "Version 1",
-    financialYear: "2025-26",
-    versionNumber: 1,
-    createdAt: new Date().toISOString(),
-    createdByUserId,
-    trialBalanceWorkbookName: "Trial Balance.xlsx",
-    trialBalanceWorkbookPath: paths.trialBalanceWorkbookPath,
-    trialBalanceSourcePath: paths.trialBalanceSourcePath,
-    statementWorkbookName: "V-8.xlsx",
-    statementWorkbookPath: paths.statementWorkbookPath,
-    versionDetailsPath: paths.versionDetailsPath,
-    groupingOverridesPath: paths.groupingOverridesPath,
-    exportedPdfPath: paths.exportedPdfPath,
-    status: "draft",
-  } satisfies StatementVersionRecord;
-}
-
-export function ensureWorkspaceSeeded() {
-  const index = readWorkspaceIndex();
-
-  if (index.companies.length > 0) {
-    syncUsersDatabase(index);
-    return index;
-  }
-
-  const now = new Date().toISOString();
-  const companyId = "xyz";
-  const company: CompanyRecord = {
-    id: companyId,
-    slug: "xyz",
-    name: "XYZ",
-    code: "XYZ",
-    defaultVersionId: "v1",
-    createdAt: now,
-    updatedAt: now,
-  };
-
+function provisionCompanyFiles(companyId: number, _createdByUserId: string) {
   ensureDirectory(getCompanyDirectory(companyId));
   ensureDirectory(path.join(getCompanyDirectory(companyId), "versions"));
   ensureDirectory(getCompanyLogicDirectory(companyId));
-
-  copyFileIfMissing(defaultGroupingJsonPath, getCompanyLogicPaths(companyId).masterGroupingSourcePath);
   copyFileIfMissing(defaultGroupingWorkbookPath, getCompanyLogicPaths(companyId).masterGroupingWorkbookPath);
-
-  const adminUser: WorkspaceUserRecord = {
-    id: "company-admin",
-    companyId,
-    name: "Company Admin",
-    email: "admin@xyz.local",
-    role: "COMPANY_ADMIN",
-    password: rolePasswordDefaults.COMPANY_ADMIN,
-    isActive: true,
-    createdAt: now,
-  };
-  const financeUser: WorkspaceUserRecord = {
-    id: "finance-user",
-    companyId,
-    name: "Finance Person",
-    email: "finance@xyz.local",
-    role: "FINANCE",
-    password: rolePasswordDefaults.FINANCE,
-    isActive: true,
-    createdAt: now,
-  };
-  const auditorUser: WorkspaceUserRecord = {
-    id: "auditor-user",
-    companyId,
-    name: "Auditor",
-    email: "auditor@xyz.local",
-    role: "AUDITOR",
-    password: rolePasswordDefaults.AUDITOR,
-    isActive: true,
-    createdAt: now,
-  };
-
-  writeCompanyUsers(companyId, [adminUser, financeUser, auditorUser]);
   writeCompanySettings(companyId, defaultSettings());
-  writeCompanyVersions(companyId, [seedInitialVersion(companyId, adminUser.id)]);
-
-  const seededIndex: WorkspaceIndex = {
-    defaultCompanyId: companyId,
-    siteUsers: [defaultSiteAdminRecord()],
-    companies: [company],
-  };
-  writeWorkspaceIndex(seededIndex);
-  syncUsersDatabase(seededIndex);
-  return seededIndex;
+  writeCompanyVersions(companyId, []);
 }
 
-export function listCompanies() {
-  return ensureWorkspaceSeeded().companies;
+export async function listCompanies() {
+  return loadCompaniesFromDb();
 }
 
-export function listSiteUsers() {
-  const index = ensureWorkspaceSeeded();
-  const databaseUsers = listWorkspaceSiteUsers().map(withoutPassword);
-
-  if (databaseUsers.length > 0) {
-    return databaseUsers;
-  }
-
-  const fallbackUsers = index.siteUsers.map(withPassword);
-  upsertWorkspaceUsers(fallbackUsers);
-  return fallbackUsers.map(withoutPassword);
+export function getCachedCompanies() {
+  return companyCache;
 }
 
-export function listCompanyUsers(companyId: string) {
-  ensureWorkspaceSeeded();
-  return readCompanyUsers(companyId).map(withoutPassword);
+export async function listSiteUsers() {
+  return (await listWorkspaceSiteUsers()).map(toWorkspaceUser);
 }
 
-export function getCompanySettings(companyId: string) {
-  ensureWorkspaceSeeded();
+export async function listCompanyUsers(companyId: number) {
+  return (await listWorkspaceUsersByCompany(companyId)).map(toWorkspaceUser);
+}
+
+export function getCompanySettings(companyId: number) {
   return readCompanySettings(companyId);
 }
 
-export function listCompanyVersions(companyId: string) {
-  ensureWorkspaceSeeded();
+export function listCompanyVersions(companyId: number) {
   return readCompanyVersions(companyId).sort((left, right) => right.versionNumber - left.versionNumber);
 }
 
-export function createCompany(input: {
+export async function createCompany(input: {
   name: string;
   code: string;
   adminName: string;
   adminEmail: string;
-  adminPassword: string;
 }) {
-  const index = ensureWorkspaceSeeded();
+  const companies = await loadCompaniesFromDb();
   const normalizedAdminEmail = input.adminEmail.trim().toLowerCase();
 
-  if (findWorkspaceUserByEmail(normalizedAdminEmail)) {
+  if (!normalizedAdminEmail.includes("@")) {
+    throw new Error("Company admin email must be a valid email address.");
+  }
+
+  if (await findWorkspaceUserByEmail(normalizedAdminEmail)) {
     throw new Error("A user with this email already exists.");
   }
 
-  const now = new Date().toISOString();
-  const slugBase = slugify(input.name) || `company-${index.companies.length + 1}`;
-  let companyId = slugBase;
+  const slugBase = slugify(input.name) || `company-${companies.length + 1}`;
+  let slug = slugBase;
   let suffix = 1;
 
-  while (index.companies.some((company) => company.id === companyId)) {
+  while (companies.some((company) => company.slug === slug)) {
     suffix += 1;
-    companyId = `${slugBase}-${suffix}`;
+    slug = `${slugBase}-${suffix}`;
   }
 
-  const company: CompanyRecord = {
-    id: companyId,
-    slug: slugBase,
-    name: input.name.trim(),
-    code: input.code.trim().toUpperCase(),
-    defaultVersionId: "v1",
-    createdAt: now,
-    updatedAt: now,
-  };
+  const created = await prisma.company.create({
+    data: {
+      slug,
+      name: input.name.trim(),
+      code: input.code.trim().toUpperCase(),
+      defaultVersionId: null,
+    },
+  });
+  const company = mapCompany(created);
+  rememberCompanies([...companies, company]);
 
-  ensureDirectory(getCompanyDirectory(companyId));
-  ensureDirectory(path.join(getCompanyDirectory(companyId), "versions"));
-  ensureDirectory(getCompanyLogicDirectory(companyId));
-  copyFileIfMissing(defaultGroupingJsonPath, getCompanyLogicPaths(companyId).masterGroupingSourcePath);
-  copyFileIfMissing(defaultGroupingWorkbookPath, getCompanyLogicPaths(companyId).masterGroupingWorkbookPath);
+  try {
+    const companyAdmin = await createWorkspaceUserWithEmailedTempPassword({
+      name: input.adminName.trim(),
+      email: normalizedAdminEmail,
+      role: "COMPANY_ADMIN",
+      companyId: company.id,
+    });
 
-  const companyAdmin: WorkspaceUserRecord = {
-    id: randomUUID(),
-    companyId,
-    name: input.adminName.trim(),
-    email: normalizedAdminEmail,
-    role: "COMPANY_ADMIN",
-    password: input.adminPassword.trim() || rolePasswordDefaults.COMPANY_ADMIN,
-    isActive: true,
-    createdAt: now,
-  };
-
-  writeCompanyUsers(companyId, [companyAdmin]);
-  writeCompanySettings(companyId, defaultSettings());
-  writeCompanyVersions(companyId, [seedInitialVersion(companyId, companyAdmin.id)]);
-
-  const nextIndex: WorkspaceIndex = {
-    ...index,
-    defaultCompanyId: index.defaultCompanyId ?? companyId,
-    companies: [...index.companies, company],
-  };
-  writeWorkspaceIndex(nextIndex);
-  return company;
+    provisionCompanyFiles(company.id, companyAdmin.id);
+    return company;
+  } catch (error) {
+    await prisma.user.deleteMany({ where: { companyId: company.id } }).catch(() => undefined);
+    await prisma.company.delete({ where: { id: company.id } }).catch(() => undefined);
+    rememberCompanies(companies);
+    throw error;
+  }
 }
 
-export function createCompanyUser(input: {
-  companyId: string;
+export async function createCompanyUser(input: {
+  companyId: number;
   name: string;
   email: string;
   role: Exclude<WorkspaceUserRole, "SITE_ADMIN">;
   password?: string;
 }) {
-  const normalizedEmail = input.email.trim().toLowerCase();
-
-  if (findWorkspaceUserByEmail(normalizedEmail)) {
-    throw new Error("A user with this email already exists.");
+  await loadCompaniesFromDb();
+  if (!findCompanyRecord(input.companyId)) {
+    throw new Error("Company was not found.");
   }
 
-  const users = readCompanyUsers(input.companyId);
-  const user: WorkspaceUserRecord = {
-    id: randomUUID(),
-    companyId: input.companyId,
-    name: input.name.trim(),
-    email: normalizedEmail,
-    role: input.role,
-    password: input.password?.trim() || rolePasswordDefaults[input.role],
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  };
-
-  writeCompanyUsers(input.companyId, [...users, user]);
-  return withoutPassword(user);
+  return toWorkspaceUser(
+    await createWorkspaceUser({
+      companyId: input.companyId,
+      name: input.name.trim(),
+      email: input.email.trim().toLowerCase(),
+      role: input.role,
+      password: input.password?.trim() || rolePasswordDefaults[input.role],
+    }),
+  );
 }
 
-export function updateCompanySettings(companyId: string, settings: CompanySettings) {
-  writeCompanySettings(companyId, settings);
-  return settings;
+export function updateCompanySettings(companyId: number, settings: CompanySettings) {
+  const company = findCompanyRecord(companyId);
+  writeCompanySettings(companyId, {
+    ...settings,
+    // Excel profile is owned by site admin / companies.excel_profile_id — keep in sync.
+    excelProfileId: company?.excelProfileId ?? settings.excelProfileId,
+  });
+  return getCompanySettings(companyId);
+}
+
+export async function updateCompanyExcelProfile(companyId: number, excelProfileId: string | null) {
+  await loadCompaniesFromDb();
+  if (!findCompanyRecord(companyId)) {
+    throw new Error("Company was not found.");
+  }
+
+  const normalized = excelProfileId?.trim() || null;
+  if (normalized && !isRegisteredExcelProfileId(normalized)) {
+    throw new Error("Unknown Excel structure profile.");
+  }
+
+  const updated = await prisma.company.update({
+    where: { id: companyId },
+    data: { excelProfileId: normalized },
+  });
+  const company = mapCompany(updated);
+  rememberCompanies(companyCache.map((entry) => (entry.id === company.id ? company : entry)));
+
+  const settings = getCompanySettings(companyId);
+  writeCompanySettings(companyId, {
+    ...settings,
+    excelProfileId: company.excelProfileId,
+  });
+
+  return company;
 }
 
 export async function createCompanyVersionFromFormData(input: {
-  companyId: string;
+  companyId: number;
   label: string;
   financialYear: string;
   createdByUserId: string;
   trialBalanceFile?: File | null;
   statementWorkbookFile?: File | null;
 }) {
-  ensureWorkspaceSeeded();
+  await loadCompaniesFromDb();
   const versions = listCompanyVersions(input.companyId);
   const nextVersionNumber = (versions[0]?.versionNumber ?? 0) + 1;
   const versionId = `v${nextVersionNumber}`;
@@ -769,19 +579,18 @@ export async function createCompanyVersionFromFormData(input: {
     throw new Error("Trial balance workbook is required.");
   }
 
+  let sourceData: TrialBalanceSourceData | null = null;
+
   if (trialBalanceFile.size > 0) {
     const buffer = Buffer.from(await trialBalanceFile.arrayBuffer());
     fs.writeFileSync(versionPaths.trialBalanceWorkbookPath, buffer);
-    writeJsonFile(
-      versionPaths.trialBalanceSourcePath,
-      parseTrialBalanceWorkbookBuffer(buffer, trialBalanceFile.name, versionPaths.trialBalanceWorkbookPath),
-    );
+    sourceData = parseTrialBalanceWorkbookBuffer(buffer, trialBalanceFile.name, versionPaths.trialBalanceWorkbookPath);
   } else if (activeVersion) {
     copyFileIfMissing(activeVersion.trialBalanceWorkbookPath, versionPaths.trialBalanceWorkbookPath);
-    copyFileIfMissing(activeVersion.trialBalanceSourcePath, versionPaths.trialBalanceSourcePath);
+    sourceData = buildEmptyTrialBalanceSourceData(versionPaths.trialBalanceWorkbookPath);
   } else {
     writeBlankTrialBalanceWorkbook(versionPaths.trialBalanceWorkbookPath);
-    writeJsonFile(versionPaths.trialBalanceSourcePath, buildEmptyTrialBalanceSourceData(versionPaths.trialBalanceWorkbookPath));
+    sourceData = buildEmptyTrialBalanceSourceData(versionPaths.trialBalanceWorkbookPath);
   }
 
   if (statementWorkbookFile && statementWorkbookFile.size > 0) {
@@ -792,10 +601,6 @@ export async function createCompanyVersionFromFormData(input: {
     copyFileIfMissing(defaultStatementWorkbookPath, versionPaths.statementWorkbookPath);
   }
 
-  writeJsonFile(versionPaths.groupingOverridesPath, {
-    updatedAt: null,
-    overrides: {},
-  });
   writeJsonFile(versionPaths.consolidationConfigPath, {
     updatedAt: null,
     members: [],
@@ -860,6 +665,21 @@ export async function createCompanyVersionFromFormData(input: {
     status: "draft",
   };
 
+  if (!sourceData) {
+    throw new Error("Unable to parse the trial balance workbook.");
+  }
+
+  await persistTrialBalanceVersionToDb({
+    companyId: input.companyId,
+    versionNumber: version.versionNumber,
+    label: version.label,
+    financialYear: version.financialYear,
+    createdByUserId: input.createdByUserId,
+    trialBalanceFileName: version.trialBalanceWorkbookName,
+    trialBalanceFileKey: version.trialBalanceWorkbookPath,
+    sourceData,
+  });
+
   writeVersionDetails(versionPaths.versionDetailsPath, {
     versionId,
     companyId: input.companyId,
@@ -886,20 +706,12 @@ export async function createCompanyVersionFromFormData(input: {
   });
 
   writeCompanyVersions(input.companyId, [...versions, version]);
-  const index = readWorkspaceIndex();
-  const updatedCompanies = index.companies.map((company) =>
-    company.id === input.companyId
-      ? {
-          ...company,
-          defaultVersionId: version.id,
-          updatedAt: version.createdAt,
-        }
-      : company,
-  );
-  writeWorkspaceIndex({
-    ...index,
-    companies: updatedCompanies,
+  await prisma.company.update({
+    where: { id: input.companyId },
+    data: { defaultVersionId: version.id },
   });
+
+  await loadCompaniesFromDb();
 
   return version;
 }
@@ -916,48 +728,76 @@ function permissionsForRole(role: WorkspaceUserRole) {
   };
 }
 
-export function resolveWorkspaceContext(input?: {
-  companyId?: string;
-  userId?: string;
-  versionId?: string;
-}) {
-  const index = ensureWorkspaceSeeded();
-  const siteUsers = index.siteUsers.map(withoutPassword);
-  const company =
-    index.companies.find((entry) => entry.id === input?.companyId) ??
-    index.companies.find((entry) => entry.id === index.defaultCompanyId) ??
-    index.companies[0];
-
-  if (!company) {
-    throw new Error("No companies are configured in the workspace.");
+export function requireActiveCompany(context: WorkspaceContext): ActiveWorkspaceContext {
+  if (!context.company || !context.currentVersion) {
+    throw new Error("Select a company version before continuing. Upload a trial balance to create the first version.");
   }
 
-  const companyUsers = listCompanyUsers(company.id);
-  const selectableUsers = [...siteUsers, ...companyUsers];
-  const currentUser =
-    selectableUsers.find((user) => user.id === input?.userId) ??
-    siteUsers[0] ??
-    companyUsers[0];
+  return context as ActiveWorkspaceContext;
+}
 
-  if (!currentUser) {
-    throw new Error("No active user is configured for the selected company.");
+export function requireCompanyContext(context: WorkspaceContext): CompanyWorkspaceContext {
+  if (!context.company) {
+    throw new Error("No company is selected.");
+  }
+
+  return context as CompanyWorkspaceContext;
+}
+
+export function resolveWorkspaceContext(input?: {
+  companyId?: string | number;
+  userId?: string;
+  currentUser?: WorkspaceUser;
+  versionId?: string;
+}) {
+  const requestedCompanyId = parseCompanyId(input?.companyId);
+  const company =
+    companyCache.find((entry) => entry.id === requestedCompanyId) ??
+    companyCache[0] ??
+    null;
+
+  const currentUser =
+    input?.currentUser ??
+    ({
+      id: input?.userId || "system",
+      name: "System",
+      email: "",
+      role: "SITE_ADMIN",
+      isActive: true,
+      tempLogin: false,
+      createdAt: new Date(0).toISOString(),
+    } satisfies WorkspaceUser);
+
+  if (!company) {
+    if (currentUser.role === "SITE_ADMIN") {
+      return {
+        companies: companyCache,
+        company: null,
+        companyUsers: [],
+        selectableUsers: currentUser ? [currentUser] : [],
+        currentUser,
+        versions: [],
+        currentVersion: null,
+        settings: defaultSettings(),
+        permissions: permissionsForRole(currentUser.role),
+      } satisfies WorkspaceContext;
+    }
+
+    throw new Error("No companies are configured in the workspace.");
   }
 
   const versions = listCompanyVersions(company.id);
   const currentVersion =
     versions.find((version) => version.id === input?.versionId) ??
     versions.find((version) => version.id === company.defaultVersionId) ??
-    versions[0];
-
-  if (!currentVersion) {
-    throw new Error("No statement versions are configured for the selected company.");
-  }
+    versions[0] ??
+    null;
 
   return {
-    companies: index.companies,
+    companies: companyCache,
     company,
-    companyUsers,
-    selectableUsers,
+    companyUsers: input?.currentUser ? [input.currentUser] : [],
+    selectableUsers: input?.currentUser ? [input.currentUser] : [],
     currentUser,
     versions,
     currentVersion,
@@ -966,93 +806,90 @@ export function resolveWorkspaceContext(input?: {
   } satisfies WorkspaceContext;
 }
 
-export function getTrialBalanceSourceForVersion(companyId: string, versionId: string) {
-  return readJsonFile<TrialBalanceSourceData>(getCompanyVersionPaths(companyId, versionId).trialBalanceSourcePath, {
-    sourceName: "Trial Balance.xlsx",
-    sourcePath: getCompanyVersionPaths(companyId, versionId).trialBalanceWorkbookPath,
-    lastModifiedIso: new Date().toISOString(),
-    rows: [],
+export async function resolveAuthenticatedWorkspaceContext(input: {
+  user: WorkspaceUser;
+  companyId?: string | number;
+  versionId?: string;
+}) {
+  await loadCompaniesFromDb();
+  const context = resolveWorkspaceContext({
+    companyId: input.user.role === "SITE_ADMIN" ? input.companyId : input.user.companyId,
+    userId: input.user.id,
+    currentUser: input.user,
+    versionId: input.versionId,
   });
+
+  const siteUsers = await listSiteUsers();
+  const companyUsers = context.company ? await listCompanyUsers(context.company.id) : [];
+
+  return {
+    ...context,
+    companyUsers,
+    selectableUsers: [...siteUsers, ...companyUsers],
+    currentUser: input.user,
+    permissions: permissionsForRole(input.user.role),
+  } satisfies WorkspaceContext;
 }
 
-export function findWorkspaceUserByEmail(email: string) {
-  const normalizedEmail = email.trim().toLowerCase();
-  ensureWorkspaceSeeded();
-  return findWorkspaceUserRecordByEmail(normalizedEmail);
+export async function findWorkspaceUserByEmail(email: string) {
+  const user = await findWorkspaceUserRecordByEmail(email.trim().toLowerCase());
+  return user ? toWorkspaceUser(user) : null;
 }
 
-export function getWorkspaceUserById(userId: string) {
-  ensureWorkspaceSeeded();
-  return getWorkspaceUserRecordById(userId);
+export async function getWorkspaceUserById(userId: string) {
+  const user = await getWorkspaceUserRecordById(userId);
+  return user ? toWorkspaceUser(user) : null;
 }
 
-export function authenticateWorkspaceUser(email: string, password: string) {
-  const user = findWorkspaceUserByEmail(email);
+export async function authenticateWorkspaceUser(email: string, password: string) {
+  const record = await getWorkspaceUserWithSecretByEmail(email);
 
-  if (!user || !user.isActive) {
+  if (!record || !record.isActive) {
     return null;
   }
 
-  return user.password === password ? withoutPassword(user) : null;
-}
-
-export function resetWorkspaceUserPassword(email: string, password: string) {
-  const normalizedEmail = email.trim().toLowerCase();
-  const user = findWorkspaceUserByEmail(normalizedEmail);
-
-  if (!user || !user.isActive) {
+  const matches = await verifyPassword(password, record.passwordHash);
+  if (!matches) {
     return null;
   }
 
-  const nextPassword = password.trim();
-
-  if (user.companyId) {
-    const users = readCompanyUsers(user.companyId);
-    const nextUsers = users.map((entry) =>
-      entry.id === user.id
-        ? {
-            ...entry,
-            password: nextPassword,
-          }
-        : entry,
-    );
-
-    writeCompanyUsers(user.companyId, nextUsers);
-  } else {
-    const index = readWorkspaceIndex();
-    const nextSiteUsers = index.siteUsers.map((entry) =>
-      entry.id === user.id
-        ? {
-            ...entry,
-            password: nextPassword,
-          }
-        : entry,
-    );
-
-    writeWorkspaceIndex({
-      ...index,
-      siteUsers: nextSiteUsers,
-    });
-    upsertWorkspaceUsers(nextSiteUsers.map(withPassword));
-  }
-
-  updateWorkspaceUserPasswordById(user.id, nextPassword);
-
-  return withoutPassword({
-    ...user,
-    password: nextPassword,
+  return toWorkspaceUser({
+    id: record.id,
+    name: record.name,
+    email: record.email,
+    role: record.role,
+    companyId: record.companyId ?? undefined,
+    isActive: record.isActive,
+    tempLogin: record.tempLogin,
+    createdAt: record.createdAt.toISOString(),
   });
 }
 
-export function getLoginDemoAccounts() {
-  ensureWorkspaceSeeded();
+export async function resetWorkspaceUserPassword(email: string, password: string) {
+  const record = await getWorkspaceUserWithSecretByEmail(email.trim().toLowerCase());
 
-  return listAllWorkspaceUsers().map((user) => ({
+  if (!record || !record.isActive) {
+    return null;
+  }
+
+  return toWorkspaceUser(await updateWorkspaceUserPasswordById(record.id, password.trim()));
+}
+
+export async function changeAuthenticatedUserPassword(input: {
+  userId: string;
+  currentPassword: string;
+  nextPassword: string;
+}) {
+  const updated = await changeWorkspaceUserPassword(input);
+  return updated ? toWorkspaceUser(updated) : null;
+}
+
+export async function getLoginDemoAccounts() {
+  return (await listAllWorkspaceUsers()).map((user) => ({
     id: user.id,
     name: user.name,
     email: user.email,
     role: user.role,
-    password: user.password ?? rolePasswordDefaults[user.role],
     companyId: user.companyId,
   }));
 }

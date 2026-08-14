@@ -59,7 +59,7 @@ export default async function ConsolidationPage({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
   };
-  const snapshot = buildConsolidationSnapshot(scope);
+  const snapshot = await buildConsolidationSnapshot(scope);
 
   return (
     <div className="space-y-6">

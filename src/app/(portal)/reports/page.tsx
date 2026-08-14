@@ -17,15 +17,15 @@ export default async function ReportsPage({
 }) {
   const context = await resolveWorkspaceContextFromSearchParams(searchParams ? await searchParams : undefined);
   assertRouteAccess(context.currentUser.role, "/reports");
-  const pack = getStatementPack({
+  const pack = await getStatementPack({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
   });
-  const snapshot = getTrialBalanceSnapshot({
+  const snapshot = await getTrialBalanceSnapshot({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
   });
-  const ratioTable = buildKeyRatioTable({
+  const ratioTable = await buildKeyRatioTable({
     financialYear: context.currentVersion.financialYear,
     scope: {
       companyId: context.company.id,

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { requireRequestWorkspaceContext } from "@/lib/auth";
+import { requireRequestWorkspaceCompany } from "@/lib/auth";
 import { getCompanySettings, updateCompanySettings } from "@/lib/company-workspace";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const companyId = searchParams.get("companyId");
 
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceCompany(request, {
     companyId: companyId ?? undefined,
   });
 
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "companyId is required." }, { status: 400 });
   }
 
-  const context = requireRequestWorkspaceContext(request, {
+  const context = await requireRequestWorkspaceCompany(request, {
     companyId: body.companyId,
   });
 
@@ -46,10 +46,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "You do not have permission to update company settings." }, { status: 403 });
   }
 
+  const existing = getCompanySettings(context.company.id);
+
   const settings = updateCompanySettings(context.company.id, {
     reportingCurrency: body.reportingCurrency?.trim() || "INR",
     unitsLabel: body.unitsLabel?.trim() || "(Rs. in lakhs)",
     footerNote: body.footerNote?.trim() || "",
+    // Excel profile is mapped by site admin only.
+    excelProfileId: existing.excelProfileId,
     directors: (body.directors ?? [])
       .filter((entry) => entry.name && entry.designation)
       .map((entry) => ({
