@@ -1,8 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { read, utils, write, type CellObject, type WorkSheet } from "xlsx";
+import {
+  read,
+  utils,
+  write,
+  type CellObject,
+  type WorkBook,
+  type WorkSheet,
+} from "xlsx";
 import { getStatementPack, hasStatementValue, type CashFlowRow, type NoteSchedule, type StatementDisplayRow } from "@/lib/statement-pack";
+import {
+  normalizeStatementLineOverrides,
+  serializeStatementLineOverrides,
+  type StatementLineOverride,
+} from "@/lib/statement-line-overrides";
 import { getTrialBalanceSnapshot, type LedgerRow } from "@/lib/trial-balance";
 import {
   getCompanySettings,
@@ -22,8 +34,8 @@ const workbookSheetOrder = [
   "Cash Flow_FY26",
   "SOCIE",
   "PPE- note 3",
-  "BS  Notes  4-19",
-  "PL Notes 20-27",
+  "BS Notes 3-18",
+  "PL Notes 19-27",
   "Note 28-31",
   "FI -32",
   "Ratios -33",
@@ -74,6 +86,7 @@ type CachedDerivedWorkbook = {
 type WorkbookScope = {
   companyId?: number;
   versionId?: string;
+  statementLineOverrides?: StatementLineOverride[];
 };
 
 const cachedWorkbook: Record<string, CachedWorkbook> = {};
@@ -110,6 +123,52 @@ function sheetWithWidths(rows: string[][], widths: number[]) {
   const sheet = utils.aoa_to_sheet(rows);
   sheet["!cols"] = widths.map((width) => ({ wch: width }));
   return sheet;
+}
+
+function replaceWorkbookSheet(
+  workbook: WorkBook,
+  oldName: string,
+  newName: string,
+  sheet: WorkSheet,
+) {
+  workbook.Sheets[newName] = sheet;
+
+  if (oldName !== newName) {
+    delete workbook.Sheets[oldName];
+  }
+
+  workbook.SheetNames = workbook.SheetNames.map((sheetName) =>
+    sheetName === oldName ? newName : sheetName,
+  );
+
+  if (!workbook.SheetNames.includes(newName)) {
+    workbook.SheetNames.push(newName);
+  }
+}
+
+function expandWorkbookRows(workbook: WorkBook) {
+  workbook.SheetNames.forEach((sheetName) => {
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet?.["!rows"]) {
+      return;
+    }
+
+    sheet["!rows"] = sheet["!rows"].map((row) => {
+      if (!row) {
+        return row;
+      }
+
+      return {
+        ...row,
+        hidden: false,
+        level: 0,
+        hpx: row.hpx === 0 ? undefined : row.hpx,
+        hpt: row.hpt === 0 ? undefined : row.hpt,
+      };
+    });
+
+    delete (sheet as WorkSheet & { "!outline"?: unknown })["!outline"];
+  });
 }
 
 function buildStatementRows(
@@ -168,7 +227,7 @@ function buildNoteRows(
 
   for (const note of notes) {
     rows.push(["", "", "", ""]);
-    rows.push([`Note ${note.displayNoteNumber ?? note.noteNumber}`, "", "", ""]);
+    rows.push([`Note ${note.noteNumber}`, "", "", ""]);
     rows.push([note.title.toUpperCase(), "", "", ""]);
 
     if (note.kind === "text") {
@@ -193,181 +252,6 @@ function buildNoteRows(
   return rows;
 }
 
-function normalizeText(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-}
-
-function rowTextMatches(row: LedgerRow, fragments: string[]) {
-  const haystack = `${row.subgroupLabel} ${row.derivedLabel} ${row.glDescription}`.toLowerCase();
-  return fragments.some((fragment) => haystack.includes(fragment.toLowerCase()));
-}
-
-function ledgerReferenceFromRows(rows: LedgerRow[]) {
-  return [...new Set(rows.map((row) => row.glNumber).filter(Boolean))].sort((left, right) => left.localeCompare(right)).join(", ");
-}
-
-function mapTemplateNoteRows(displayNoteNumber: string, rows: LedgerRow[]) {
-  switch (displayNoteNumber) {
-    case "20":
-      return rows.filter((row) => row.noteNumber === "19");
-    case "21":
-      return rows.filter((row) => row.noteNumber === "20");
-    case "22":
-    case "23":
-      return rows.filter((row) => row.noteNumber === "21");
-    case "24":
-      return rows.filter((row) => row.noteNumber === "22");
-    case "25":
-      return rows.filter((row) => row.noteNumber === "23");
-    case "26":
-      return rows.filter((row) => row.noteNumber === "25");
-    default:
-      return [];
-  }
-}
-
-function getTemplateLedgerReference(displayNoteNumber: string, particular: string, rows: LedgerRow[]) {
-  const normalized = normalizeText(particular);
-
-  if (
-    !normalized ||
-    normalized.startsWith("note ") ||
-    normalized === "total" ||
-    normalized === "revenue from operations" ||
-    normalized === "other income" ||
-    normalized === "cost of material consumed" ||
-    normalized === "changes in inventories of finished goods and work in progress" ||
-    normalized === "employee benefits expense" ||
-    normalized === "finance costs" ||
-    normalized === "other expenses" ||
-    normalized === "earnings per share eps" ||
-    normalized === "adjustments" ||
-    normalized === "opening inventory" ||
-    normalized === "closing inventory" ||
-    normalized === "repair and maintenance" ||
-    normalized === "other operating revenue" ||
-    normalized === "cost of raw material consumed" ||
-    normalized === "cost of packing material consumed" ||
-    normalized === "interest income on financial assets measured at amortised cost" ||
-    normalized === "interest on borrowings measured at amortised cost" ||
-    normalized === "reconciling the amount of revenue recognised in the statement of profit and loss with the contracted price"
-  ) {
-    return "";
-  }
-
-  const scopedRows = mapTemplateNoteRows(displayNoteNumber, rows);
-  let matchedRows: LedgerRow[] = [];
-
-  if (displayNoteNumber === "20") {
-    if (normalized === "sales of products") {
-      matchedRows = scopedRows.filter((row) => row.subgroupKey === "revenue-sales");
-    } else if (normalized === "job work income") {
-      matchedRows = scopedRows.filter((row) => row.subgroupKey === "revenue-job-work");
-    } else if (normalized === "scrap sales") {
-      matchedRows = scopedRows.filter((row) => row.subgroupKey === "revenue-scrap");
-    } else if (normalized === "export incentives") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["export incentive"]));
-    } else if (normalized === "duty drawback income") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["duty drawback"]));
-    } else if (normalized === "rodtep script income") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["rodtep"]));
-    } else if (normalized === "revenue as per contracted price") {
-      matchedRows = scopedRows.filter((row) => row.subgroupKey === "revenue-sales" || row.subgroupKey === "revenue-job-work");
-    } else if (normalized === "price difference") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["price difference", "rate difference"]));
-    } else if (normalized === "revenue from contract with customer") {
-      matchedRows = scopedRows.filter(
-        (row) =>
-          row.subgroupKey === "revenue-sales" ||
-          row.subgroupKey === "revenue-job-work" ||
-          rowTextMatches(row, ["price difference", "rate difference"]),
-      );
-    }
-  } else if (displayNoteNumber === "21") {
-    if (normalized === "from banks") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["bank interest", "from banks"]));
-    } else if (normalized === "from others") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["from others", "security deposit", "car loan"]));
-    } else if (normalized === "profit on sale of mutual fund") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["mutual fund"]));
-    } else if (normalized === "fair value gain instruments measured at fvtpl") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["fvtpl", "fair value gain"]));
-    } else if (normalized === "foreign exchange gain net") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["foreign exchange", "forex"]));
-    } else if (normalized === "gain on sale of assets") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["gain on sale of assets"]));
-    } else if (normalized === "revenue from sale of assets") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["revenue from sale of assets", "sale of assets"]));
-    } else if (normalized === "reversal of expected credit loss provision on trade receivable net") {
-      matchedRows = scopedRows.filter((row) => rowTextMatches(row, ["expected credit loss", "ecl provision"]));
-    }
-  }
-
-  if (matchedRows.length === 0) {
-    matchedRows = scopedRows.filter(
-      (row) => normalizeText(row.subgroupLabel) === normalized || normalizeText(row.derivedLabel) === normalized || normalizeText(row.glDescription) === normalized,
-    );
-  }
-
-  return ledgerReferenceFromRows(matchedRows);
-}
-
-function toRoundedTemplateValue(value: string) {
-  const normalized = value.replace(/,/g, "").trim();
-
-  if (!normalized || !Number.isFinite(Number(normalized))) {
-    return value.trim();
-  }
-
-  return formatAmount(Number(normalized));
-}
-
-function buildExactPlNoteRows(
-  companyName: string,
-  heading: string,
-  currentDateLabel: string,
-  previousDateLabel: string,
-  templateRows: string[][],
-  sourceRows: LedgerRow[],
-) {
-  const rows: string[][] = [
-    [companyName, "", "", ""],
-    [heading, "", "", "(₹ in Lakh)"],
-    ["", "", "", ""],
-    ["Particulars", "For the year ended", "For the year ended", "Ledger Reference"],
-    ["", currentDateLabel, previousDateLabel, ""],
-  ];
-
-  let currentDisplayNoteNumber = "";
-
-  for (const templateRow of templateRows.slice(5)) {
-    const particulars = (templateRow[0] ?? "").trim();
-    const current = toRoundedTemplateValue(templateRow[2] ?? "");
-    const previous = toRoundedTemplateValue(templateRow[3] ?? "");
-
-    if (!particulars && !current && !previous) {
-      rows.push(["", "", "", ""]);
-      continue;
-    }
-
-    const noteMatch = particulars.match(/^NOTE\s+(\d+)/i);
-    if (noteMatch) {
-      currentDisplayNoteNumber = noteMatch[1];
-      rows.push([`NOTE ${currentDisplayNoteNumber}`, "", "", ""]);
-      continue;
-    }
-
-    rows.push([
-      particulars,
-      current,
-      previous,
-      getTemplateLedgerReference(currentDisplayNoteNumber, particulars, sourceRows),
-    ]);
-  }
-
-  return rows;
-}
-
 function getFileStamp(filePath: string) {
   try {
     const stats = fs.statSync(filePath);
@@ -377,7 +261,10 @@ function getFileStamp(filePath: string) {
   }
 }
 
-function getDerivedWorkbookDependencyStamp(scope: Required<WorkbookScope>) {
+function getDerivedWorkbookDependencyStamp(scope: {
+  companyId: number;
+  versionId: string;
+}) {
   const versionPaths = getCompanyVersionPaths(scope.companyId, scope.versionId);
   const companyRoot = path.join(process.cwd(), "data", "companies", getCompanySlug(scope.companyId));
 
@@ -392,7 +279,10 @@ function getDerivedWorkbookDependencyStamp(scope: Required<WorkbookScope>) {
 
 async function buildDerivedWorkbook(scope?: WorkbookScope) {
   const resolvedScope = resolveWorkbookScope(scope);
-  const cacheKey = `${resolvedScope.companyId}:${resolvedScope.versionId}`;
+  const overrideSignature = serializeStatementLineOverrides(
+    resolvedScope.statementLineOverrides,
+  );
+  const cacheKey = `${resolvedScope.companyId}:${resolvedScope.versionId}:${overrideSignature}`;
   const context = requireActiveCompany(
     resolveWorkspaceContext({
       companyId: resolvedScope.companyId,
@@ -413,6 +303,7 @@ async function buildDerivedWorkbook(scope?: WorkbookScope) {
     String(snapshot.rowCount),
     snapshot.sourcePath,
     ledgerStamp,
+    overrideSignature,
   ].join("|");
 
   if (cachedDerivedWorkbook[cacheKey]?.dependencyStamp === dependencyStamp) {
@@ -424,7 +315,7 @@ async function buildDerivedWorkbook(scope?: WorkbookScope) {
   const companyName = context.company.name;
   const reportingDates = getReportingDateLabels(context.currentVersion.financialYear);
   const bsNotes = pack.notes.filter((note) => note.statementArea === "balance-sheet");
-  const plNoteTemplateRows = extractSheetRows(workbook.Sheets["PL Notes 20-27"] ?? utils.aoa_to_sheet([]));
+  const plNotes = pack.notes.filter((note) => note.statementArea === "profit-and-loss");
 
   applyFixedAssetSchedulesToWorkbook(workbook, resolvedScope);
 
@@ -452,21 +343,31 @@ async function buildDerivedWorkbook(scope?: WorkbookScope) {
     ),
     [72, 16, 16],
   );
-  workbook.Sheets["BS  Notes  4-19"] = sheetWithWidths(
-    buildNoteRows(companyName, `Notes to Financial Statements for the year ended ${reportingDates.current}`, reportingDates.current, reportingDates.previous, bsNotes),
-    [64, 16, 16, 18],
-  );
-  workbook.Sheets["PL Notes 20-27"] = sheetWithWidths(
-    buildExactPlNoteRows(
-      companyName,
-      `Notes to Financial Statements for the year ended ${reportingDates.current}`,
-      reportingDates.current,
-      reportingDates.previous,
-      plNoteTemplateRows,
-      snapshot.rows,
+  replaceWorkbookSheet(
+    workbook,
+    "BS  Notes  4-19",
+    "BS Notes 3-18",
+    sheetWithWidths(
+      buildNoteRows(companyName, `Notes to Financial Statements for the year ended ${reportingDates.current}`, reportingDates.current, reportingDates.previous, bsNotes),
+      [64, 16, 16, 18],
     ),
-    [64, 16, 16, 18],
   );
+  replaceWorkbookSheet(
+    workbook,
+    "PL Notes 20-27",
+    "PL Notes 19-27",
+    sheetWithWidths(
+      buildNoteRows(
+        companyName,
+        `Notes to Financial Statements for the year ended ${reportingDates.current}`,
+        reportingDates.current,
+        reportingDates.previous,
+        plNotes,
+      ),
+      [64, 16, 16, 18],
+    ),
+  );
+  expandWorkbookRows(workbook);
 
   const detailedSheets = workbookSheetOrder
     .map((sheetName) => {
@@ -521,13 +422,21 @@ function isPresent<T>(value: T | null): value is T {
 
 function resolveWorkbookScope(scope?: WorkbookScope) {
   if (scope?.companyId && scope?.versionId) {
-    return scope;
+    return {
+      ...scope,
+      statementLineOverrides: normalizeStatementLineOverrides(
+        scope.statementLineOverrides,
+      ),
+    };
   }
 
   const context = requireActiveCompany(resolveWorkspaceContext());
   return {
     companyId: context.company.id,
     versionId: context.currentVersion.id,
+    statementLineOverrides: normalizeStatementLineOverrides(
+      scope?.statementLineOverrides,
+    ),
   };
 }
 

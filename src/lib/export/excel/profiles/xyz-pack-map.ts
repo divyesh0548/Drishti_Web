@@ -58,37 +58,37 @@ export const XYZ_PACK_CELL_MAP: XyzCellPair[] = [
   {
     label: "Investments (no separate pack note — cleared)",
     source: { kind: "literal", current: 0, previous: 0 },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G11", previous: "H11" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G11", previous: "H11" },
     statementCells: { sheet: "BS", current: "D13", previous: "E13" },
   },
   {
     label: "Loans (non-current) — pack short-term loans as nearest source",
     source: { kind: "note", noteNumber: "17" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G21", previous: "H21" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G21", previous: "H21" },
     statementCells: { sheet: "BS", current: "D14", previous: "E14" },
   },
   {
     label: "Other Financial Assets (non-current)",
     source: { kind: "literal", current: 0, previous: 0 },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G33", previous: "H33" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G33", previous: "H33" },
     statementCells: { sheet: "BS", current: "D15", previous: "E15" },
   },
   {
     label: "Deferred Tax Assets / Liabilities (Net)",
     source: { kind: "note", noteNumber: "6" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G328", previous: "H328" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G328", previous: "H328" },
     statementCells: { sheet: "BS", current: "D16", previous: "E16" },
   },
   {
     label: "Other Tax Assets (Net)",
     source: { kind: "literal", current: 0, previous: 0 },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G44", previous: "H44" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G44", previous: "H44" },
     statementCells: { sheet: "BS", current: "D17", previous: "E17" },
   },
   {
     label: "Other Non Current Assets",
     source: { kind: "note", noteNumber: "13" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G54", previous: "H54" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G54", previous: "H54" },
     statementCells: { sheet: "BS", current: "D18", previous: "E18" },
   },
 
@@ -96,37 +96,37 @@ export const XYZ_PACK_CELL_MAP: XyzCellPair[] = [
   {
     label: "Inventories",
     source: { kind: "note", noteNumber: "14" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G76", previous: "H76" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G76", previous: "H76" },
     statementCells: { sheet: "BS", current: "D22", previous: "E22" },
   },
   {
     label: "Trade Receivables",
     source: { kind: "note", noteNumber: "15" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G90", previous: "H90" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G90", previous: "H90" },
     statementCells: { sheet: "BS", current: "D24", previous: "E24" },
   },
   {
     label: "Cash and Cash Equivalents",
     source: { kind: "note", noteNumber: "16" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G118", previous: "H118" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G118", previous: "H118" },
     statementCells: { sheet: "BS", current: "D25", previous: "E25" },
   },
   {
     label: "Current Tax Assets (net)",
     source: { kind: "literal", current: 0, previous: 0 },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G48", previous: "H48" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G48", previous: "H48" },
     statementCells: { sheet: "BS", current: "D26", previous: "E26" },
   },
   {
     label: "Bank balances other than cash",
     source: { kind: "literal", current: 0, previous: 0 },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G122", previous: "H122" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G122", previous: "H122" },
     statementCells: { sheet: "BS", current: "D28", previous: "E28" },
   },
   {
     label: "Other Current Assets",
     source: { kind: "note", noteNumber: "18" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G131", previous: "H131" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G131", previous: "H131" },
     statementCells: { sheet: "BS", current: "D29", previous: "E29" },
   },
 
@@ -134,19 +134,19 @@ export const XYZ_PACK_CELL_MAP: XyzCellPair[] = [
   {
     label: "Equity Share Capital",
     source: { kind: "note", noteNumber: "3" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G146", previous: "H146" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G146", previous: "H146" },
     statementCells: { sheet: "BS", current: "D35", previous: "E35" },
   },
   {
     label: "Instrument entirely equity in nature",
     source: { kind: "literal", current: 0, previous: 0 },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G197", previous: "H197" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G197", previous: "H197" },
     statementCells: { sheet: "BS", current: "D36", previous: "E36" },
   },
   {
     label: "Other Equity",
     source: { kind: "note", noteNumber: "4" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G227", previous: "H227" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G227", previous: "H227" },
     statementCells: { sheet: "BS", current: "D37", previous: "E37" },
   },
 
@@ -154,49 +154,49 @@ export const XYZ_PACK_CELL_MAP: XyzCellPair[] = [
   {
     label: "Non-current Borrowings",
     source: { kind: "note", noteNumber: "5" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G263", previous: "H263" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G263", previous: "H263" },
     statementCells: { sheet: "BS", current: "D43", previous: "E43" },
   },
   {
     label: "Non-current Provisions",
     source: { kind: "note", noteNumber: "7" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G306", previous: "H306" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G306", previous: "H306" },
     statementCells: { sheet: "BS", current: "D45", previous: "E45" },
   },
   {
     label: "Current Borrowings",
     source: { kind: "note", noteNumber: "8" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G275", previous: "H275" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G275", previous: "H275" },
     statementCells: { sheet: "BS", current: "D50", previous: "E50" },
   },
   {
     label: "Trade Payables — MSME (split unavailable)",
     source: { kind: "literal", current: 0, previous: 0 },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G421", previous: "H421" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G421", previous: "H421" },
     statementCells: { sheet: "BS", current: "D53", previous: "E53" },
   },
   {
     label: "Trade Payables — others",
     source: { kind: "note", noteNumber: "9" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G422", previous: "H422" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G422", previous: "H422" },
     statementCells: { sheet: "BS", current: "D54", previous: "E54" },
   },
   {
     label: "Other Financial Liabilities",
     source: { kind: "literal", current: 0, previous: 0 },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G469", previous: "H469" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G469", previous: "H469" },
     statementCells: { sheet: "BS", current: "D55", previous: "E55" },
   },
   {
     label: "Other Current Liabilities",
     source: { kind: "note", noteNumber: "10" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G475", previous: "H475" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G475", previous: "H475" },
     statementCells: { sheet: "BS", current: "D56", previous: "E56" },
   },
   {
     label: "Current Provisions",
     source: { kind: "note", noteNumber: "11" },
-    noteCells: { sheet: "BS  Notes  4-19", current: "G311", previous: "H311" },
+    noteCells: { sheet: "BS Notes 3-18", current: "G311", previous: "H311" },
     statementCells: { sheet: "BS", current: "D58", previous: "E58" },
   },
 
@@ -204,19 +204,19 @@ export const XYZ_PACK_CELL_MAP: XyzCellPair[] = [
   {
     label: "Revenue from Operations",
     source: { kind: "note", noteNumber: "19" },
-    noteCells: { sheet: "PL Notes 20-27", current: "C17", previous: "D17" },
+    noteCells: { sheet: "PL Notes 19-27", current: "C17", previous: "D17" },
     statementCells: { sheet: "PL", current: "D8", previous: "E8" },
   },
   {
     label: "Other Income",
     source: { kind: "note", noteNumber: "20" },
-    noteCells: { sheet: "PL Notes 20-27", current: "C36", previous: "D36" },
+    noteCells: { sheet: "PL Notes 19-27", current: "C36", previous: "D36" },
     statementCells: { sheet: "PL", current: "D9", previous: "E9" },
   },
   {
     label: "Cost of materials consumed",
-    source: { kind: "note", noteNumber: "21-materials" },
-    noteCells: { sheet: "PL Notes 20-27", current: "C51", previous: "D51" },
+    source: { kind: "note", noteNumber: "21" },
+    noteCells: { sheet: "PL Notes 19-27", current: "C51", previous: "D51" },
     statementCells: { sheet: "PL", current: "D13", previous: "E13" },
   },
   {
@@ -226,36 +226,36 @@ export const XYZ_PACK_CELL_MAP: XyzCellPair[] = [
   },
   {
     label: "Changes in inventories",
-    source: { kind: "note", noteNumber: "21-inventory" },
-    noteCells: { sheet: "PL Notes 20-27", current: "C64", previous: "D64" },
+    source: { kind: "note", noteNumber: "22" },
+    noteCells: { sheet: "PL Notes 19-27", current: "C64", previous: "D64" },
     statementCells: { sheet: "PL", current: "D15", previous: "E15" },
   },
   {
     label: "Employee Benefits Expense",
-    source: { kind: "note", noteNumber: "22" },
-    noteCells: { sheet: "PL Notes 20-27", current: "C74", previous: "D74" },
+    source: { kind: "note", noteNumber: "23" },
+    noteCells: { sheet: "PL Notes 19-27", current: "C74", previous: "D74" },
     statementCells: { sheet: "PL", current: "D16", previous: "E16" },
   },
   {
     label: "Finance Costs",
-    source: { kind: "note", noteNumber: "23" },
-    noteCells: { sheet: "PL Notes 20-27", current: "C86", previous: "D86" },
+    source: { kind: "note", noteNumber: "24" },
+    noteCells: { sheet: "PL Notes 19-27", current: "C86", previous: "D86" },
     statementCells: { sheet: "PL", current: "D17", previous: "E17" },
   },
   {
     label: "Depreciation and Amortisation",
-    source: { kind: "note", noteNumber: "24" },
+    source: { kind: "note", noteNumber: "25" },
     statementCells: { sheet: "PL", current: "D18", previous: "E18" },
   },
   {
     label: "Other Expenses",
-    source: { kind: "note", noteNumber: "25" },
-    noteCells: { sheet: "PL Notes 20-27", current: "C111", previous: "D111" },
+    source: { kind: "note", noteNumber: "26" },
+    noteCells: { sheet: "PL Notes 19-27", current: "C111", previous: "D111" },
     statementCells: { sheet: "PL", current: "D19", previous: "E19" },
   },
   {
     label: "Current Tax",
-    source: { kind: "note", noteNumber: "26" },
+    source: { kind: "note", noteNumber: "27" },
     statementCells: { sheet: "PL", current: "D23", previous: "E23" },
   },
   {
@@ -323,7 +323,7 @@ export function applyXyzPackCellMap(workbook: WorkBook, pack: StatementPack) {
   });
 
   // PPE depreciation charge used by template PL formulas (sum G17+G23+G27).
-  const depreciation = resolvePackAmount(pack, { kind: "note", noteNumber: "24" });
+  const depreciation = resolvePackAmount(pack, { kind: "note", noteNumber: "25" });
   setNumericCell(workbook.Sheets["PPE- note 3"], "G17", depreciation.current);
   setNumericCell(workbook.Sheets["PPE- note 3"], "G23", 0);
   setNumericCell(workbook.Sheets["PPE- note 3"], "G27", 0);

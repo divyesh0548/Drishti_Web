@@ -21,6 +21,7 @@ async function buildExportContext(scope: ExportScope = {}): Promise<ExcelExportC
     getStatementPack({
       companyId: workspace.company.id,
       versionId: workspace.currentVersion.id,
+      statementLineOverrides: scope.statementLineOverrides,
     }),
     getTrialBalanceSnapshot({
       companyId: workspace.company.id,
@@ -36,6 +37,7 @@ async function buildExportContext(scope: ExportScope = {}): Promise<ExcelExportC
     scope: {
       companyId: workspace.company.id,
       versionId: workspace.currentVersion.id,
+      statementLineOverrides: scope.statementLineOverrides,
     },
     companyId: workspace.company.id,
     companySlug: workspace.company.slug,

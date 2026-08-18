@@ -35,8 +35,8 @@ const XYZ_SHEETS_TO_KEEP = [
   "Cash Flow_FY26",
   "SOCIE",
   "PPE- note 3",
-  "BS  Notes  4-19",
-  "PL Notes 20-27",
+  "BS Notes 3-18",
+  "PL Notes 19-27",
   "Note 28-31",
   "FI -32",
   "Ratios -33",
@@ -64,6 +64,49 @@ function setCell(sheet: WorkSheet, address: string, value: string | number) {
   delete next.f;
   delete next.w;
   sheet[address] = next;
+}
+
+const TEMPLATE_SHEET_RENAMES = [
+  ["BS  Notes  4-19", "BS Notes 3-18"],
+  ["PL Notes 20-27", "PL Notes 19-27"],
+] as const;
+
+function rewriteSheetFormulaReferences(workbook: WorkBook, oldName: string, newName: string) {
+  const quotedOld = `'${oldName.replace(/'/g, "''")}'`;
+  const quotedNew = `'${newName.replace(/'/g, "''")}'`;
+
+  workbook.SheetNames.forEach((sheetName) => {
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) {
+      return;
+    }
+
+    Object.keys(sheet).forEach((address) => {
+      if (address.startsWith("!")) {
+        return;
+      }
+
+      const cell = sheet[address] as CellObject | undefined;
+      if (typeof cell?.f !== "string") {
+        return;
+      }
+
+      cell.f = cell.f.split(quotedOld).join(quotedNew).split(oldName).join(newName);
+    });
+  });
+}
+
+function renameWorkbookSheet(workbook: WorkBook, oldName: string, newName: string) {
+  if (oldName === newName || !workbook.Sheets[oldName]) {
+    return;
+  }
+
+  workbook.Sheets[newName] = workbook.Sheets[oldName];
+  delete workbook.Sheets[oldName];
+  workbook.SheetNames = workbook.SheetNames.map((sheetName) =>
+    sheetName === oldName ? newName : sheetName,
+  );
+  rewriteSheetFormulaReferences(workbook, oldName, newName);
 }
 
 function keepOnlySheets(workbook: WorkBook, sheetNames: readonly string[]) {
@@ -115,6 +158,9 @@ export function buildXyzStatementWorkbook(context: ExcelExportContext): Buffer {
     cellFormula: true,
   });
 
+  TEMPLATE_SHEET_RENAMES.forEach(([oldName, newName]) => {
+    renameWorkbookSheet(workbook, oldName, newName);
+  });
   keepOnlySheets(workbook, XYZ_SHEETS_TO_KEEP);
 
   const missingRequired = XYZ_SHEETS_TO_KEEP.filter((name) => !workbook.Sheets[name]);

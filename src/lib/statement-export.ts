@@ -1,5 +1,12 @@
 import PDFDocument from "pdfkit";
-import { read, utils, write, type CellObject, type WorkSheet } from "xlsx";
+import {
+  read,
+  utils,
+  write,
+  type CellObject,
+  type WorkBook,
+  type WorkSheet,
+} from "xlsx";
 
 import {
   buildV8FinancialModel,
@@ -11,6 +18,7 @@ import {
 import { requireActiveCompany, resolveWorkspaceContext, type CompanySettings } from "@/lib/company-workspace";
 import { applyFixedAssetSchedulesToWorkbook, hasFixedAssetUpload, readFixedAssetStore, sumFixedAssetLines } from "@/lib/fixed-assets";
 import { buildKeyRatioTable } from "@/lib/key-ratios";
+import type { StatementLineOverride } from "@/lib/statement-line-overrides";
 import { getStatementPack, type NoteSchedule, type StatementDisplayRow, type StatementPack } from "@/lib/statement-pack";
 import { getTrialBalanceSnapshot, type LedgerRow, type TrialBalanceSnapshot } from "@/lib/trial-balance";
 
@@ -28,6 +36,7 @@ type StatementSheetName = "BS" | "PL" | "SOCIE" | "Cash Flow_FY26";
 export type ExportScope = {
   companyId?: number;
   versionId?: string;
+  statementLineOverrides?: StatementLineOverride[];
 };
 
 type FooterPerson = {
@@ -116,6 +125,31 @@ function normalizeCell(value: string, valueColumn: boolean) {
   }
 
   return formatAmount(value);
+}
+
+function expandWorkbookRows(workbook: WorkBook) {
+  workbook.SheetNames.forEach((sheetName) => {
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet?.["!rows"]) {
+      return;
+    }
+
+    sheet["!rows"] = sheet["!rows"].map((row) => {
+      if (!row) {
+        return row;
+      }
+
+      return {
+        ...row,
+        hidden: false,
+        level: 0,
+        hpx: row.hpx === 0 ? undefined : row.hpx,
+        hpt: row.hpt === 0 ? undefined : row.hpt,
+      };
+    });
+
+    delete (sheet as WorkSheet & { "!outline"?: unknown })["!outline"];
+  });
 }
 
 function toneForRow(cells: string[]) {
@@ -598,7 +632,7 @@ function noteAmounts(note: NoteSchedule | undefined | null) {
 }
 
 function findNote(pack: StatementPack, id: string) {
-  return pack.notes.find((note) => note.noteNumber === id || note.displayNoteNumber === id);
+  return pack.notes.find((note) => note.noteNumber === id);
 }
 
 function noteRowAmounts(note: NoteSchedule | undefined | null, labels: string[]) {
@@ -763,10 +797,6 @@ function toStatementLakhs(row: LedgerRow, year: "current" | "previous") {
 function noteInternalKeyForRow(row: LedgerRow) {
   if (!row.noteNumber) {
     return "";
-  }
-
-  if (row.noteNumber === "21") {
-    return row.subgroupKey === "materials-change-fg-wip" ? "21-inventory" : "21-materials";
   }
 
   return row.noteNumber;
@@ -935,7 +965,7 @@ function buildLinkedNoteSheet(input: {
   input.notes.forEach((note) => {
     rows.push(["", "", "", "", "", ""]);
     const anchorRow = rows.length + 1;
-    rows.push([`Note ${note.displayNoteNumber ?? note.noteNumber}`, "", "", "", "", ""]);
+    rows.push([`Note ${note.noteNumber}`, "", "", "", "", ""]);
     rows.push([note.title.toUpperCase(), "", "", "", "", ""]);
 
     const groups = input.noteGroups.get(note.noteNumber) ?? [];
@@ -947,7 +977,7 @@ function buildLinkedNoteSheet(input: {
 
     const totalRow = rows.length + 1;
     rows.push(["Total", "", "", "", "", ""]);
-    anchors.set(note.displayNoteNumber ?? note.noteNumber, {
+    anchors.set(note.noteNumber, {
       sheetName: input.sheetName,
       anchorRow,
       totalRow,
@@ -975,8 +1005,7 @@ function buildLinkedNoteSheet(input: {
 
   input.notes.forEach((note) => {
     cursor += 1;
-    const displayNoteNumber = note.displayNoteNumber ?? note.noteNumber;
-    const anchor = anchors.get(displayNoteNumber);
+    const anchor = anchors.get(note.noteNumber);
 
     if (!anchor) {
       return;
@@ -1201,7 +1230,7 @@ export async function buildLinkedStatementWorkbook(scope?: ExportScope) {
     notes: balanceSheetNotes,
     noteGroups,
     tbRowLookup: trialBalanceSheet.keyToRowNumber,
-    sheetName: "BS  Notes  4-19",
+    sheetName: "BS Notes 3-18",
   });
   const linkedProfitNotes = buildLinkedNoteSheet({
     companyName: context.company.name,
@@ -1212,12 +1241,14 @@ export async function buildLinkedStatementWorkbook(scope?: ExportScope) {
     notes: profitAndLossNotes,
     noteGroups,
     tbRowLookup: trialBalanceSheet.keyToRowNumber,
-    sheetName: "PL Notes 20-27",
+    sheetName: "PL Notes 19-27",
   });
 
   workbook.Sheets["Trial Balance"] = trialBalanceSheet.sheet;
-  workbook.Sheets["BS  Notes  4-19"] = linkedBalanceNotes.sheet;
-  workbook.Sheets["PL Notes 20-27"] = linkedProfitNotes.sheet;
+  delete workbook.Sheets["BS  Notes  4-19"];
+  delete workbook.Sheets["PL Notes 20-27"];
+  workbook.Sheets["BS Notes 3-18"] = linkedBalanceNotes.sheet;
+  workbook.Sheets["PL Notes 19-27"] = linkedProfitNotes.sheet;
   workbook.Sheets.BS = buildLinkedBalanceSheetSheet({
     companyName: context.company.name,
     currentLabel: dateLabels.current,
@@ -1233,8 +1264,10 @@ export async function buildLinkedStatementWorkbook(scope?: ExportScope) {
     noteAnchors: linkedProfitNotes.anchors,
   });
 
-  const prioritySheetOrder = ["README", "Trial Balance", "BS", "PL", "Cash Flow_FY26", "SOCIE", "BS  Notes  4-19", "PL Notes 20-27"];
-  const remainingSheets = workbook.SheetNames.filter((sheetName) => !prioritySheetOrder.includes(sheetName));
+  const prioritySheetOrder = ["README", "Trial Balance", "BS", "PL", "Cash Flow_FY26", "SOCIE", "BS Notes 3-18", "PL Notes 19-27"];
+  const remainingSheets = workbook.SheetNames.filter(
+    (sheetName) => !prioritySheetOrder.includes(sheetName) && Boolean(workbook.Sheets[sheetName]),
+  );
   workbook.SheetNames = [...prioritySheetOrder.filter((sheetName) => Boolean(workbook.Sheets[sheetName])), ...remainingSheets];
 
   const workbookWithCalc = workbook as typeof workbook & {
@@ -1253,6 +1286,7 @@ export async function buildLinkedStatementWorkbook(scope?: ExportScope) {
     fullCalcOnLoad: true,
     forceFullCalc: true,
   };
+  expandWorkbookRows(workbook);
 
   return Buffer.from(write(workbook, { type: "buffer", bookType: "xlsx", cellStyles: true }));
 }
@@ -1291,14 +1325,14 @@ async function buildTemplateDrivenWorkbook(scope?: ExportScope) {
   const note16 = findNote(pack, "16");
   const note17 = findNote(pack, "17");
   const note18 = findNote(pack, "18");
-  const note19 = findNote(pack, "20");
-  const note20 = findNote(pack, "21");
-  const note21a = findNote(pack, "22");
-  const note21c = findNote(pack, "23");
-  const note22 = findNote(pack, "24");
-  const note23 = findNote(pack, "25");
-  const note24 = pack.notes.find((note) => note.noteNumber === "24");
-  const note25 = pack.notes.find((note) => note.noteNumber === "25");
+  const note19 = findNote(pack, "19");
+  const note20 = findNote(pack, "20");
+  const note21a = findNote(pack, "21");
+  const note21c = findNote(pack, "22");
+  const note22 = findNote(pack, "23");
+  const note23 = findNote(pack, "24");
+  const note24 = findNote(pack, "25");
+  const note25 = findNote(pack, "26");
 
   const shareCapital = noteAmounts(note3);
   const otherEquity = noteAmounts(note4);
@@ -1781,6 +1815,7 @@ async function buildTemplateDrivenWorkbook(scope?: ExportScope) {
     fullCalcOnLoad: true,
     forceFullCalc: true,
   };
+  expandWorkbookRows(workbook);
 
   return Buffer.from(write(workbook, { type: "buffer", bookType: "xlsx", cellStyles: true }));
 }

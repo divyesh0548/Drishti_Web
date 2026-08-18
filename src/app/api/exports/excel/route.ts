@@ -2,6 +2,7 @@ import { buildStatementWorkbookExport } from "@/lib/export/excel";
 import { requireRequestWorkspaceContext } from "@/lib/auth";
 import { companyHasMasterGrouping, MASTER_GROUPING_REQUIRED_ERROR } from "@/lib/grouping-database";
 import { getWorkspaceSelection } from "@/lib/portal-context";
+import { parseStatementLineOverrides } from "@/lib/statement-line-overrides";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,9 @@ export async function GET(request: Request) {
   const { buffer, fileName } = await buildStatementWorkbookExport({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
+    statementLineOverrides: parseStatementLineOverrides(
+      searchParams.get("statementOverrides"),
+    ),
   });
 
   return new Response(new Uint8Array(buffer), {

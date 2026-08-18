@@ -3,6 +3,7 @@ import { requireRequestWorkspaceContext } from "@/lib/auth";
 import { getCompanyVersionPaths } from "@/lib/company-workspace";
 import { companyHasMasterGrouping, MASTER_GROUPING_REQUIRED_ERROR } from "@/lib/grouping-database";
 import { getWorkspaceSelection } from "@/lib/portal-context";
+import { parseStatementLineOverrides } from "@/lib/statement-line-overrides";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -45,6 +46,9 @@ export async function GET(request: Request) {
   const pdf = await buildStatementPdf({
     companyId: context.company.id,
     versionId: context.currentVersion.id,
+    statementLineOverrides: parseStatementLineOverrides(
+      searchParams.get("statementOverrides"),
+    ),
   });
   await fs.mkdir(getCompanyVersionPaths(context.company.id, context.currentVersion.id).versionDirectory, { recursive: true });
   await fs.writeFile(exportPath, pdf);

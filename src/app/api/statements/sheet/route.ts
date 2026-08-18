@@ -1,6 +1,7 @@
 import { getV8WorkbookSheet } from "@/lib/v8-financials";
 import { requireRequestWorkspaceContext } from "@/lib/auth";
 import { getWorkspaceSelection } from "@/lib/portal-context";
+import { parseStatementLineOverrides } from "@/lib/statement-line-overrides";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,13 @@ export async function GET(request: Request) {
     return Response.json({ error: "Authentication required." }, { status: 401 });
   }
 
-  const sheet = await getV8WorkbookSheet(name, { companyId: context.company.id, versionId: context.currentVersion.id });
+  const sheet = await getV8WorkbookSheet(name, {
+    companyId: context.company.id,
+    versionId: context.currentVersion.id,
+    statementLineOverrides: parseStatementLineOverrides(
+      searchParams.get("statementOverrides"),
+    ),
+  });
 
   if (!sheet) {
     return Response.json({ error: "Sheet not found." }, { status: 404 });

@@ -9,7 +9,9 @@ For example :
 Note numbers are linked with subgrouping not grouping. in the "src\lib\ledger-groupings.ts" (subgroupCatalog).
 
 
-Ask : Wht in export statement note number is displayed by adding 1? An special logic behind that?
+Ask : 
+
+Changing note for BS/PL do not affect the extracted report. Because it just updated the values in the provide report format. Changing notes will only change the total amount in statements page.
 
 Notes 28 to 40 are not defined in program, they are just kept as same from source format file.
 

@@ -1,4 +1,12 @@
-import { getLedgerSubgroupOptions } from "@/lib/ledger-groupings";
+import {
+  getLedgerSubgroupOptions,
+  noteTitleByNumber,
+} from "@/lib/ledger-groupings";
+import {
+  normalizeStatementLineOverrides,
+  type StatementLineOverride,
+  type StatementOverrideArea,
+} from "@/lib/statement-line-overrides";
 import {
   getTrialBalanceSnapshot,
   type LedgerRow,
@@ -31,7 +39,6 @@ export type NoteScheduleRow = {
 
 export type NoteSchedule = {
   noteNumber: string;
-  displayNoteNumber?: string;
   title: string;
   sheetName: string;
   statementArea: "general" | "balance-sheet" | "profit-and-loss";
@@ -102,6 +109,15 @@ type BuiltProfitAndLoss = {
   profitBeforeTaxPrevious: number;
   profitAfterTax: number;
   profitAfterTaxPrevious: number;
+};
+
+type StatementLineConfig = {
+  particulars: string;
+  noteNumber: string;
+};
+
+type StatementPackScope = Parameters<typeof getTrialBalanceSnapshot>[0] & {
+  statementLineOverrides?: StatementLineOverride[];
 };
 
 const subgroupRank = new Map(
@@ -197,7 +213,6 @@ function toNoteRows(rows: LedgerRow[]) {
 
 function buildTextNote(input: {
   noteNumber: string;
-  displayNoteNumber?: string;
   title: string;
   sheetName: string;
   statementArea: NoteSchedule["statementArea"];
@@ -213,7 +228,6 @@ function buildTextNote(input: {
 
 function buildTableNote(input: {
   noteNumber: string;
-  displayNoteNumber?: string;
   title: string;
   sheetName: string;
   statementArea: NoteSchedule["statementArea"];
@@ -227,7 +241,6 @@ function buildTableNote(input: {
 
   return {
     noteNumber: input.noteNumber,
-    displayNoteNumber: input.displayNoteNumber,
     title: input.title,
     sheetName: input.sheetName,
     statementArea: input.statementArea,
@@ -255,11 +268,39 @@ function buildStatementLine(
 
   return {
     particulars,
-    note: note.displayNoteNumber ?? note.noteNumber,
+    note: note.noteNumber,
     current: note.totalCurrent,
     previous: note.totalPrevious,
     emphasis: "line",
   };
+}
+
+function buildStatementOverrideMap(overrides?: StatementLineOverride[]) {
+  return new Map(
+    normalizeStatementLineOverrides(overrides).map((override) => [
+      `${override.statementArea}:${override.particulars}`,
+      override.noteNumber,
+    ]),
+  );
+}
+
+function buildConfiguredStatementLine(
+  notes: BuiltNote[],
+  overrides: Map<string, string>,
+  statementArea: StatementOverrideArea,
+  config: StatementLineConfig,
+) {
+  const overrideKey = `${statementArea}:${config.particulars}`;
+  const effectiveNoteNumber = overrides.has(overrideKey)
+    ? overrides.get(overrideKey) ?? ""
+    : config.noteNumber;
+
+  if (!effectiveNoteNumber) {
+    return null;
+  }
+
+  const note = notes.find((entry) => entry.noteNumber === effectiveNoteNumber) ?? null;
+  return buildStatementLine(note, config.particulars);
 }
 
 function sumStatementRows(rows: Array<StatementDisplayRow | null>) {
@@ -625,79 +666,66 @@ function buildNotes(snapshot: TrialBalanceSnapshot) {
     },
     {
       noteNumber: "19",
-      displayNoteNumber: "20",
-      title: "Revenue from Operations",
+      title: noteTitleByNumber["19"],
       sheetName: "N19 Revenue",
       statementArea: "profit-and-loss" as const,
       rowFilter: (row: LedgerRow) => row.noteNumber === "19",
     },
     {
       noteNumber: "20",
-      displayNoteNumber: "21",
-      title: "Other Income",
+      title: noteTitleByNumber["20"],
       sheetName: "N20 Other Income",
       statementArea: "profit-and-loss" as const,
       rowFilter: (row: LedgerRow) => row.noteNumber === "20",
     },
     {
-      noteNumber: "21-materials",
-      displayNoteNumber: "22",
-      title: "Cost of Material Consumed",
+      noteNumber: "21",
+      title: noteTitleByNumber["21"],
       sheetName: "N21 Materials",
       statementArea: "profit-and-loss" as const,
-      rowFilter: (row: LedgerRow) =>
-        row.noteNumber === "21" &&
-        row.subgroupKey !== "materials-change-fg-wip",
-    },
-    {
-      noteNumber: "21-inventory",
-      displayNoteNumber: "23",
-      title: "Changes in Inventories of Finished Goods and Work In Progress",
-      sheetName: "N23 Inventory",
-      statementArea: "profit-and-loss" as const,
-      rowFilter: (row: LedgerRow) =>
-        row.noteNumber === "21" &&
-        row.subgroupKey === "materials-change-fg-wip",
+      rowFilter: (row: LedgerRow) => row.noteNumber === "21",
     },
     {
       noteNumber: "22",
-      displayNoteNumber: "24",
-      title: "Employee Benefits Expense",
-      sheetName: "N22 Employee",
+      title: noteTitleByNumber["22"],
+      sheetName: "N22 Inventory",
       statementArea: "profit-and-loss" as const,
       rowFilter: (row: LedgerRow) => row.noteNumber === "22",
     },
     {
       noteNumber: "23",
-      displayNoteNumber: "25",
-      title: "Finance Costs",
-      sheetName: "N23 Finance",
+      title: noteTitleByNumber["23"],
+      sheetName: "N23 Employee",
       statementArea: "profit-and-loss" as const,
       rowFilter: (row: LedgerRow) => row.noteNumber === "23",
     },
     {
       noteNumber: "24",
-      displayNoteNumber: "3",
-      title: "Depreciation and Amortisation",
-      sheetName: "N24 Depreciation",
+      title: noteTitleByNumber["24"],
+      sheetName: "N24 Finance",
       statementArea: "profit-and-loss" as const,
       rowFilter: (row: LedgerRow) => row.noteNumber === "24",
     },
     {
       noteNumber: "25",
-      displayNoteNumber: "26",
-      title: "Other Expenses",
-      sheetName: "N25 Other Exp",
+      title: noteTitleByNumber["25"],
+      sheetName: "N25 Depreciation",
       statementArea: "profit-and-loss" as const,
       rowFilter: (row: LedgerRow) => row.noteNumber === "25",
     },
     {
       noteNumber: "26",
-      displayNoteNumber: "16",
-      title: "Tax Expense",
-      sheetName: "N26 Tax",
+      title: noteTitleByNumber["26"],
+      sheetName: "N26 Other Exp",
       statementArea: "profit-and-loss" as const,
       rowFilter: (row: LedgerRow) => row.noteNumber === "26",
+    },
+    {
+      noteNumber: "27",
+      title: noteTitleByNumber["27"],
+      sheetName: "N27 Tax",
+      statementArea: "profit-and-loss" as const,
+      rowFilter: (row: LedgerRow) => row.noteNumber === "27",
     },
   ];
 
@@ -737,7 +765,10 @@ function buildNotes(snapshot: TrialBalanceSnapshot) {
   return notes;
 }
 
-function buildBalanceSheet(notes: BuiltNote[]): BuiltBalanceSheet {
+function buildBalanceSheet(
+  notes: BuiltNote[],
+  statementLineOverrides?: StatementLineOverride[],
+): BuiltBalanceSheet {
   const shareCapital = notes.find((note) => note.noteNumber === "3") ?? null;
   const reserves = notes.find((note) => note.noteNumber === "4") ?? null;
   const longTermBorrowings =
@@ -762,33 +793,63 @@ function buildBalanceSheet(notes: BuiltNote[]): BuiltBalanceSheet {
   const shortTermLoans = notes.find((note) => note.noteNumber === "17") ?? null;
   const otherCurrentAssets =
     notes.find((note) => note.noteNumber === "18") ?? null;
+  void shareCapital;
+  void reserves;
+  void longTermBorrowings;
+  void deferredTax;
+  void longTermProvisions;
+  void shortTermBorrowings;
+  void tradePayables;
+  void otherCurrentLiabilities;
+  void shortTermProvisions;
+  void ppe;
+  void otherNonCurrentAssets;
+  void inventories;
+  void tradeReceivables;
+  void cash;
+  void shortTermLoans;
+  void otherCurrentAssets;
 
+  const overrides = buildStatementOverrideMap(statementLineOverrides);
   const shareholderFundRows = [
-    buildStatementLine(shareCapital, "Share Capital"),
-    buildStatementLine(reserves, "Reserves and Surplus"),
-  ];
+    { particulars: "Share Capital", noteNumber: "3" },
+    { particulars: "Reserves and Surplus", noteNumber: "4" },
+  ].map((config) =>
+    buildConfiguredStatementLine(notes, overrides, "balance-sheet", config),
+  );
   const nonCurrentLiabilityRows = [
-    buildStatementLine(longTermBorrowings, "Long-term Borrowings"),
-    buildStatementLine(deferredTax, "Deferred Tax Liabilities (Net)"),
-    buildStatementLine(longTermProvisions, "Long-term Provisions"),
-  ];
+    { particulars: "Long-term Borrowings", noteNumber: "5" },
+    { particulars: "Deferred Tax Liabilities (Net)", noteNumber: "6" },
+    { particulars: "Long-term Provisions", noteNumber: "7" },
+  ].map((config) =>
+    buildConfiguredStatementLine(notes, overrides, "balance-sheet", config),
+  );
   const currentLiabilityRows = [
-    buildStatementLine(shortTermBorrowings, "Short-term Borrowings"),
-    buildStatementLine(tradePayables, "Trade Payables"),
-    buildStatementLine(otherCurrentLiabilities, "Other Current Liabilities"),
-    buildStatementLine(shortTermProvisions, "Short-term Provisions"),
-  ];
+    { particulars: "Short-term Borrowings", noteNumber: "8" },
+    { particulars: "Trade Payables", noteNumber: "9" },
+    { particulars: "Other Current Liabilities", noteNumber: "10" },
+    { particulars: "Short-term Provisions", noteNumber: "11" },
+  ].map((config) =>
+    buildConfiguredStatementLine(notes, overrides, "balance-sheet", config),
+  );
   const nonCurrentAssetRows = [
-    buildStatementLine(ppe, "Property, Plant, Equipment and Intangible Assets"),
-    buildStatementLine(otherNonCurrentAssets, "Other Non-current Assets"),
-  ];
+    {
+      particulars: "Property, Plant, Equipment and Intangible Assets",
+      noteNumber: "12",
+    },
+    { particulars: "Other Non-current Assets", noteNumber: "13" },
+  ].map((config) =>
+    buildConfiguredStatementLine(notes, overrides, "balance-sheet", config),
+  );
   const currentAssetRows = [
-    buildStatementLine(inventories, "Inventories"),
-    buildStatementLine(tradeReceivables, "Trade Receivables"),
-    buildStatementLine(cash, "Cash and Cash Equivalents"),
-    buildStatementLine(shortTermLoans, "Short-term Loans and Advances"),
-    buildStatementLine(otherCurrentAssets, "Other Current Assets"),
-  ];
+    { particulars: "Inventories", noteNumber: "14" },
+    { particulars: "Trade Receivables", noteNumber: "15" },
+    { particulars: "Cash and Cash Equivalents", noteNumber: "16" },
+    { particulars: "Short-term Loans and Advances", noteNumber: "17" },
+    { particulars: "Other Current Assets", noteNumber: "18" },
+  ].map((config) =>
+    buildConfiguredStatementLine(notes, overrides, "balance-sheet", config),
+  );
 
   const shareholderFundsTotal = sumStatementRows(shareholderFundRows);
   const nonCurrentLiabilitiesTotal = sumStatementRows(nonCurrentLiabilityRows);
@@ -885,34 +946,32 @@ function buildBalanceSheet(notes: BuiltNote[]): BuiltBalanceSheet {
   };
 }
 
-function buildProfitAndLoss(notes: BuiltNote[]): BuiltProfitAndLoss {
-  const revenue = notes.find((note) => note.noteNumber === "19") ?? null;
-  const otherIncome = notes.find((note) => note.noteNumber === "20") ?? null;
-  const materials =
-    notes.find((note) => note.noteNumber === "21-materials") ?? null;
-  const inventoryChanges =
-    notes.find((note) => note.noteNumber === "21-inventory") ?? null;
-  const employees = notes.find((note) => note.noteNumber === "22") ?? null;
-  const finance = notes.find((note) => note.noteNumber === "23") ?? null;
-  const depreciation = notes.find((note) => note.noteNumber === "24") ?? null;
-  const otherExpenses = notes.find((note) => note.noteNumber === "25") ?? null;
-  const taxExpense = notes.find((note) => note.noteNumber === "26") ?? null;
+function buildProfitAndLoss(
+  notes: BuiltNote[],
+  statementLineOverrides?: StatementLineOverride[],
+): BuiltProfitAndLoss {
+  const overrides = buildStatementOverrideMap(statementLineOverrides);
+  const taxExpense = notes.find((note) => note.noteNumber === "27") ?? null;
 
   const incomeRows = [
-    buildStatementLine(revenue, "Revenue from Operations"),
-    buildStatementLine(otherIncome, "Other Income"),
-  ];
+    { particulars: "Revenue from Operations", noteNumber: "19" },
+    { particulars: "Other Income", noteNumber: "20" },
+  ].map((config) =>
+    buildConfiguredStatementLine(notes, overrides, "profit-and-loss", config),
+  );
   const expenseRows = [
-    buildStatementLine(materials, "Cost of materials consumed"),
-    buildStatementLine(
-      inventoryChanges,
-      "Changes in inventories of finished goods and work-in-progress",
-    ),
-    buildStatementLine(employees, "Employee Benefits Expense"),
-    buildStatementLine(finance, "Finance Costs"),
-    buildStatementLine(depreciation, "Depreciation and Amortisation"),
-    buildStatementLine(otherExpenses, "Other Expenses"),
-  ];
+    { particulars: "Cost of materials consumed", noteNumber: "21" },
+    {
+      particulars: "Changes in inventories of finished goods and work-in-progress",
+      noteNumber: "22",
+    },
+    { particulars: "Employee Benefits Expense", noteNumber: "23" },
+    { particulars: "Finance Costs", noteNumber: "24" },
+    { particulars: "Depreciation and Amortisation", noteNumber: "25" },
+    { particulars: "Other Expenses", noteNumber: "26" },
+  ].map((config) =>
+    buildConfiguredStatementLine(notes, overrides, "profit-and-loss", config),
+  );
 
   const totalIncome = sumStatementRows(incomeRows);
   const totalExpensesBeforeTax = sumStatementRows(expenseRows);
@@ -951,7 +1010,7 @@ function buildProfitAndLoss(notes: BuiltNote[]): BuiltProfitAndLoss {
       ? [
           {
             particulars: "Tax Expense",
-            note: taxExpense.displayNoteNumber ?? taxExpense.noteNumber,
+            note: taxExpense.noteNumber,
             current: tax.current,
             previous: tax.previous,
             emphasis: "line" as const,
@@ -1034,18 +1093,24 @@ function reconcileReservesWithProfitAndLoss(
 }
 
 export async function getStatementPack(
-  scope?: Parameters<typeof getTrialBalanceSnapshot>[0],
+  scope?: StatementPackScope,
 ): Promise<StatementPack> {
-  const snapshot = await getTrialBalanceSnapshot(scope);
+  const snapshot = await getTrialBalanceSnapshot({
+    companyId: scope?.companyId,
+    versionId: scope?.versionId,
+  });
   const baseNotes = buildNotes(snapshot);
-  const profitAndLoss = buildProfitAndLoss(baseNotes);
-  const preliminaryBalanceSheet = buildBalanceSheet(baseNotes);
+  const profitAndLoss = buildProfitAndLoss(baseNotes, scope?.statementLineOverrides);
+  const preliminaryBalanceSheet = buildBalanceSheet(
+    baseNotes,
+    scope?.statementLineOverrides,
+  );
   const notes = reconcileReservesWithProfitAndLoss(
     baseNotes,
     profitAndLoss,
     preliminaryBalanceSheet,
   );
-  const balanceSheet = buildBalanceSheet(notes);
+  const balanceSheet = buildBalanceSheet(notes, scope?.statementLineOverrides);
   const cashFlow = buildCashFlowStatement(notes, {
     ...snapshot,
     profitAndLoss: {
