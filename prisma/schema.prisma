@@ -32,8 +32,10 @@ model Company {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  users    User[]
-  versions StatementVersion[]
+  users                 User[]
+  versions              StatementVersion[]
+  masterGroupings       MasterGrouping[]
+  masterGroupingLedgers MasterGroupingLedger[]
 
   @@map("companies")
 }
@@ -121,7 +123,9 @@ model LedgerGroupingOverride {
 
 model MasterGrouping {
   id            String   @id @default(cuid())
-  groupKey      String   @unique
+  companyId     Int
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  groupKey      String
   label         String
   statementArea String
   keywords      String[] @default([])
@@ -132,15 +136,20 @@ model MasterGrouping {
 
   ledgers MasterGroupingLedger[]
 
+  @@unique([companyId, groupKey])
+  @@index([companyId])
   @@map("master_groupings")
 }
 
 model MasterGroupingLedger {
-  id       String         @id @default(cuid())
-  glNumber String         @unique
-  groupKey String
-  group    MasterGrouping @relation(fields: [groupKey], references: [groupKey], onDelete: Cascade)
+  id        String         @id @default(cuid())
+  companyId Int
+  company   Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  glNumber  String
+  groupKey  String
+  group     MasterGrouping @relation(fields: [companyId, groupKey], references: [companyId, groupKey], onDelete: Cascade)
 
-  @@index([groupKey])
+  @@unique([companyId, glNumber])
+  @@index([companyId, groupKey])
   @@map("master_grouping_ledgers")
 }

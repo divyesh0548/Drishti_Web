@@ -1,3 +1,10 @@
-In trial balance sheet add keywords for grouping and subgrouping so it will automatically taking mapping. Client will provide grouping and sub-grouping mapping with GL Number of trail balance sheet.
 
-Make datebase for storing TB data for each company, version wise.
+Provide an option to delete verion of a company. (Done - Testing pending)
+
+Try to add a function to change the note in BS/PL and also separate notes which are grouped.
+
+"Ratio Analysis" Add a remarks with AI for each row and keep them editable. Add charts too. Based on available FY, display all rows for that.
+
+Provide ageing logic for "Trade Receivables" and "Payables Ageing".
+
+Provide option to company admin for creating users. 1. User with read access only - Imports, Mapping, Ageing options will not be applicable. 2. User with write access - all options.

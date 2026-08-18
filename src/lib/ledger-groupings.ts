@@ -1,4 +1,7 @@
-import { requireActiveCompany, resolveWorkspaceContext } from "@/lib/company-workspace";
+import {
+  requireActiveCompany,
+  resolveWorkspaceContext,
+} from "@/lib/company-workspace";
 import {
   deleteLedgerGroupingOverrideFromDb,
   loadLedgerGroupingOverridesFromDb,
@@ -89,123 +92,1054 @@ const noteTitleByNumber = {
   "21": "Cost of Materials and Manufacturing",
   "22": "Employee Benefits Expense",
   "23": "Finance Costs",
-  "24": "Depreciation and Amortisation",
+  "24": "Depreciation and Amortisation", // Displayed as 3 in export statement
   "25": "Other Expenses",
-  "26": "Tax Expense",
+  "26": "Tax  Expense",
 } as const;
 
 const subgroupCatalog: SubgroupCatalogEntry[] = [
-  { key: "equity-share-capital-main", groupKey: "equity-share-capital", label: "Equity share capital", noteNumber: "3", noteTitle: noteTitleByNumber["3"], statementArea: "balance-sheet", keywords: ["share capital", "equity share"] },
-  { key: "equity-share-capital-ccps", groupKey: "equity-share-capital", label: "Preference shares / CCPS", noteNumber: "3", noteTitle: noteTitleByNumber["3"], statementArea: "balance-sheet", keywords: ["ccps", "preference"] },
-  { key: "other-equity-securities-premium", groupKey: "other-equity", label: "Securities premium", noteNumber: "4", noteTitle: noteTitleByNumber["4"], statementArea: "balance-sheet", keywords: ["securities premium", "premium"] },
-  { key: "other-equity-retained-earnings", groupKey: "other-equity", label: "Retained earnings", noteNumber: "4", noteTitle: noteTitleByNumber["4"], statementArea: "balance-sheet", keywords: ["retained", "profit & loss account", "profit and loss account", "surplus"] },
-  { key: "other-equity-other-reserves", groupKey: "other-equity", label: "Other reserves", noteNumber: "4", noteTitle: noteTitleByNumber["4"], statementArea: "balance-sheet", keywords: ["reserve", "equity"] },
-  { key: "borrowings-term-loans", groupKey: "borrowings", label: "Term loans", noteNumber: "5", noteTitle: noteTitleByNumber["5"], statementArea: "balance-sheet", bucketOverride: "non-current-liabilities", keywords: ["term loan", "tl_", "vehicle loan"] },
-  { key: "borrowings-lease-liabilities", groupKey: "borrowings", label: "Lease liabilities", noteNumber: "5", noteTitle: noteTitleByNumber["5"], statementArea: "balance-sheet", bucketOverride: "non-current-liabilities", keywords: ["lease liability"] },
-  { key: "borrowings-other-long-term", groupKey: "borrowings", label: "Other long-term borrowings", noteNumber: "5", noteTitle: noteTitleByNumber["5"], statementArea: "balance-sheet", bucketOverride: "non-current-liabilities", keywords: ["borrowing", "loan"] },
-  { key: "borrowings-cash-credit", groupKey: "borrowings", label: "Cash credit", noteNumber: "8", noteTitle: noteTitleByNumber["8"], statementArea: "balance-sheet", bucketOverride: "current-liabilities", keywords: ["cash credit", "cc_"] },
-  { key: "borrowings-working-capital-demand-loan", groupKey: "borrowings", label: "Working capital demand loan", noteNumber: "8", noteTitle: noteTitleByNumber["8"], statementArea: "balance-sheet", bucketOverride: "current-liabilities", keywords: ["wcdl"] },
-  { key: "borrowings-buyers-credit", groupKey: "borrowings", label: "Buyer's credit", noteNumber: "8", noteTitle: noteTitleByNumber["8"], statementArea: "balance-sheet", bucketOverride: "current-liabilities", keywords: ["buyer", "buyers credit"] },
-  { key: "borrowings-current-maturities", groupKey: "borrowings", label: "Current maturities and accrued interest", noteNumber: "8", noteTitle: noteTitleByNumber["8"], statementArea: "balance-sheet", bucketOverride: "current-liabilities", keywords: ["current maturity", "interest accrued"] },
-  { key: "borrowings-other-short-term", groupKey: "borrowings", label: "Other short-term borrowings", noteNumber: "8", noteTitle: noteTitleByNumber["8"], statementArea: "balance-sheet", bucketOverride: "current-liabilities", keywords: ["borrowing", "loan"] },
-  { key: "deferred-tax-main", groupKey: "deferred-tax-liabilities-net", label: "Deferred tax", noteNumber: "6", noteTitle: noteTitleByNumber["6"], statementArea: "balance-sheet", keywords: ["deferred tax"] },
-  { key: "provisions-gratuity", groupKey: "provisions", label: "Gratuity and leave benefits", noteNumber: "7", noteTitle: noteTitleByNumber["7"], statementArea: "balance-sheet", bucketOverride: "non-current-liabilities", keywords: ["gratuity", "leave salary", "leave encashment", "compensated absences"] },
-  { key: "provisions-other-long-term", groupKey: "provisions", label: "Other long-term provisions", noteNumber: "7", noteTitle: noteTitleByNumber["7"], statementArea: "balance-sheet", bucketOverride: "non-current-liabilities", keywords: ["provision"] },
-  { key: "provisions-bonus", groupKey: "provisions", label: "Bonus and incentive provisions", noteNumber: "11", noteTitle: noteTitleByNumber["11"], statementArea: "balance-sheet", bucketOverride: "current-liabilities", keywords: ["bonus", "incentive"] },
-  { key: "provisions-tax-and-statutory", groupKey: "provisions", label: "Tax and statutory provisions", noteNumber: "11", noteTitle: noteTitleByNumber["11"], statementArea: "balance-sheet", bucketOverride: "current-liabilities", keywords: ["tax", "statutory", "msme"] },
-  { key: "provisions-other-short-term", groupKey: "provisions", label: "Other short-term provisions", noteNumber: "11", noteTitle: noteTitleByNumber["11"], statementArea: "balance-sheet", bucketOverride: "current-liabilities", keywords: ["provision", "salary payable"] },
-  { key: "trade-payables-msme", groupKey: "trade-payables", label: "MSME trade payables", noteNumber: "9", noteTitle: noteTitleByNumber["9"], statementArea: "balance-sheet", keywords: ["msme"] },
-  { key: "trade-payables-raw-material", groupKey: "trade-payables", label: "Trade creditors for materials", noteNumber: "9", noteTitle: noteTitleByNumber["9"], statementArea: "balance-sheet", keywords: ["creditor", "supplier", "material"] },
-  { key: "trade-payables-services", groupKey: "trade-payables", label: "Trade creditors for services", noteNumber: "9", noteTitle: noteTitleByNumber["9"], statementArea: "balance-sheet", keywords: ["job work", "service", "expense payable"] },
-  { key: "trade-payables-other", groupKey: "trade-payables", label: "Other trade payables", noteNumber: "9", noteTitle: noteTitleByNumber["9"], statementArea: "balance-sheet", keywords: ["payable", "payables", "creditor"] },
-  { key: "other-financial-liabilities-employee", groupKey: "other-financial-liabilities", label: "Employee dues", noteNumber: "10", noteTitle: noteTitleByNumber["10"], statementArea: "balance-sheet", keywords: ["salary", "bonus", "employee", "pf", "esic"] },
-  { key: "other-financial-liabilities-statutory", groupKey: "other-financial-liabilities", label: "Statutory dues payable", noteNumber: "10", noteTitle: noteTitleByNumber["10"], statementArea: "balance-sheet", keywords: ["gst", "tds", "tcs", "tax", "duty"] },
-  { key: "other-financial-liabilities-security", groupKey: "other-financial-liabilities", label: "Security deposits and other balances", noteNumber: "10", noteTitle: noteTitleByNumber["10"], statementArea: "balance-sheet", keywords: ["deposit", "retention"] },
-  { key: "other-financial-liabilities-other", groupKey: "other-financial-liabilities", label: "Other financial liabilities", noteNumber: "10", noteTitle: noteTitleByNumber["10"], statementArea: "balance-sheet", keywords: ["liability", "payable"] },
-  { key: "other-current-liabilities-customer-advances", groupKey: "other-current-liabilities", label: "Advances from customers", noteNumber: "10", noteTitle: noteTitleByNumber["10"], statementArea: "balance-sheet", keywords: ["advance from customer", "customer advance"] },
-  { key: "other-current-liabilities-statutory", groupKey: "other-current-liabilities", label: "Statutory liabilities", noteNumber: "10", noteTitle: noteTitleByNumber["10"], statementArea: "balance-sheet", keywords: ["gst", "tds", "tcs", "tax", "duty"] },
-  { key: "other-current-liabilities-accrued-expenses", groupKey: "other-current-liabilities", label: "Accrued expenses", noteNumber: "10", noteTitle: noteTitleByNumber["10"], statementArea: "balance-sheet", keywords: ["accrued", "expense payable", "salary payable"] },
-  { key: "other-current-liabilities-other", groupKey: "other-current-liabilities", label: "Other current liabilities", noteNumber: "10", noteTitle: noteTitleByNumber["10"], statementArea: "balance-sheet", keywords: ["liability", "payable"] },
-  { key: "ppe-freehold-land", groupKey: "property-plant-and-equipment", label: "Freehold land", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["freehold land", "land"] },
-  { key: "ppe-building", groupKey: "property-plant-and-equipment", label: "Building", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["building"] },
-  { key: "ppe-plant-machinery", groupKey: "property-plant-and-equipment", label: "Plant and machinery", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["plant", "machinery"] },
-  { key: "ppe-office-equipment", groupKey: "property-plant-and-equipment", label: "Office equipment", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["office equipment", "office equiment"] },
-  { key: "ppe-computers", groupKey: "property-plant-and-equipment", label: "Computers", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["computer"] },
-  { key: "ppe-furniture-fixtures", groupKey: "property-plant-and-equipment", label: "Furniture and fixtures", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["furniture", "fixture"] },
-  { key: "ppe-electrical-fittings", groupKey: "property-plant-and-equipment", label: "Electrical fittings", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["electrical"] },
-  { key: "ppe-capital-work-in-progress", groupKey: "property-plant-and-equipment", label: "Capital work-in-progress", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["capital work in progress", "cwip", "capital wip"] },
-  { key: "ppe-leasehold-land", groupKey: "property-plant-and-equipment", label: "Leasehold land / right-of-use asset", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["leasehold", "right of use", "rou"] },
-  { key: "ppe-building-on-lease", groupKey: "property-plant-and-equipment", label: "Building on lease", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["building on lease"] },
-  { key: "ppe-intangible-assets", groupKey: "property-plant-and-equipment", label: "Intangible assets", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["intangible", "software", "license"] },
-  { key: "ppe-other", groupKey: "property-plant-and-equipment", label: "Other property, plant and equipment", noteNumber: "12", noteTitle: noteTitleByNumber["12"], statementArea: "balance-sheet", keywords: ["asset"] },
-  { key: "non-current-assets-capital-advances", groupKey: "non-current-assets", label: "Capital advances", noteNumber: "13", noteTitle: noteTitleByNumber["13"], statementArea: "balance-sheet", keywords: ["capital advance"] },
-  { key: "non-current-assets-long-term-advances", groupKey: "non-current-assets", label: "Long-term advances", noteNumber: "13", noteTitle: noteTitleByNumber["13"], statementArea: "balance-sheet", keywords: ["advance", "long term"] },
-  { key: "non-current-assets-other", groupKey: "non-current-assets", label: "Other non-current assets", noteNumber: "13", noteTitle: noteTitleByNumber["13"], statementArea: "balance-sheet", keywords: ["asset"] },
-  { key: "other-financial-assets-investments", groupKey: "other-financial-assets", label: "Investments", noteNumber: "13", noteTitle: noteTitleByNumber["13"], statementArea: "balance-sheet", keywords: ["investment"] },
-  { key: "other-financial-assets-long-term-loans", groupKey: "other-financial-assets", label: "Loans and advances", noteNumber: "13", noteTitle: noteTitleByNumber["13"], statementArea: "balance-sheet", keywords: ["loan", "advance"] },
-  { key: "other-financial-assets-security-deposits", groupKey: "other-financial-assets", label: "Security deposits", noteNumber: "13", noteTitle: noteTitleByNumber["13"], statementArea: "balance-sheet", keywords: ["deposit", "fd_", "security"] },
-  { key: "other-financial-assets-other", groupKey: "other-financial-assets", label: "Other non-current financial assets", noteNumber: "13", noteTitle: noteTitleByNumber["13"], statementArea: "balance-sheet", keywords: ["financial"] },
-  { key: "inventories-raw-materials", groupKey: "inventories", label: "Raw materials", noteNumber: "14", noteTitle: noteTitleByNumber["14"], statementArea: "balance-sheet", keywords: ["raw material"] },
-  { key: "inventories-work-in-progress", groupKey: "inventories", label: "Work-in-progress", noteNumber: "14", noteTitle: noteTitleByNumber["14"], statementArea: "balance-sheet", keywords: ["work in progress", "wip"] },
-  { key: "inventories-semi-finished-goods", groupKey: "inventories", label: "Semi-finished goods", noteNumber: "14", noteTitle: noteTitleByNumber["14"], statementArea: "balance-sheet", keywords: ["semi-finished", "sfg"] },
-  { key: "inventories-finished-goods", groupKey: "inventories", label: "Finished goods", noteNumber: "14", noteTitle: noteTitleByNumber["14"], statementArea: "balance-sheet", keywords: ["finished goods"] },
-  { key: "inventories-stores-and-spares", groupKey: "inventories", label: "Stores and spares", noteNumber: "14", noteTitle: noteTitleByNumber["14"], statementArea: "balance-sheet", keywords: ["stores", "spares"] },
-  { key: "inventories-stock-in-transit", groupKey: "inventories", label: "Stock in transit", noteNumber: "14", noteTitle: noteTitleByNumber["14"], statementArea: "balance-sheet", keywords: ["transit"] },
-  { key: "inventories-other", groupKey: "inventories", label: "Other inventories", noteNumber: "14", noteTitle: noteTitleByNumber["14"], statementArea: "balance-sheet", keywords: ["inventory", "stock"] },
-  { key: "trade-receivables-domestic", groupKey: "trade-receivables", label: "Domestic trade receivables", noteNumber: "15", noteTitle: noteTitleByNumber["15"], statementArea: "balance-sheet", keywords: ["domestic"] },
-  { key: "trade-receivables-export", groupKey: "trade-receivables", label: "Export trade receivables", noteNumber: "15", noteTitle: noteTitleByNumber["15"], statementArea: "balance-sheet", keywords: ["export"] },
-  { key: "trade-receivables-related-party", groupKey: "trade-receivables", label: "Related party receivables", noteNumber: "15", noteTitle: noteTitleByNumber["15"], statementArea: "balance-sheet", keywords: ["related party"] },
-  { key: "trade-receivables-other", groupKey: "trade-receivables", label: "Other trade receivables", noteNumber: "15", noteTitle: noteTitleByNumber["15"], statementArea: "balance-sheet", keywords: ["receivable", "debtor", "customer"] },
-  { key: "cash-bank-balances", groupKey: "cash-cash-equivalents", label: "Balances with banks", noteNumber: "16", noteTitle: noteTitleByNumber["16"], statementArea: "balance-sheet", keywords: ["bank", "ca_"] },
-  { key: "cash-cash-on-hand", groupKey: "cash-cash-equivalents", label: "Cash on hand", noteNumber: "16", noteTitle: noteTitleByNumber["16"], statementArea: "balance-sheet", keywords: ["cash in hand", "cash on hand"] },
-  { key: "cash-other-bank-balances", groupKey: "cash-cash-equivalents", label: "Other bank balances", noteNumber: "16", noteTitle: noteTitleByNumber["16"], statementArea: "balance-sheet", keywords: ["margin", "fixed deposit", "earmark"] },
-  { key: "cash-other", groupKey: "cash-cash-equivalents", label: "Other cash equivalents", noteNumber: "16", noteTitle: noteTitleByNumber["16"], statementArea: "balance-sheet", keywords: ["cash", "bank"] },
-  { key: "other-current-assets-short-term-loans", groupKey: "other-current-assets", label: "Short-term loans and advances", noteNumber: "17", noteTitle: noteTitleByNumber["17"], statementArea: "balance-sheet", keywords: ["loan", "advance", "advance to", "prepaid rent"] },
-  { key: "other-current-assets-prepaids", groupKey: "other-current-assets", label: "Prepaid expenses", noteNumber: "18", noteTitle: noteTitleByNumber["18"], statementArea: "balance-sheet", keywords: ["prepaid"] },
-  { key: "other-current-assets-balances-with-authorities", groupKey: "other-current-assets", label: "Balances with authorities", noteNumber: "18", noteTitle: noteTitleByNumber["18"], statementArea: "balance-sheet", keywords: ["gst", "tds", "tcs", "tax", "duty"] },
-  { key: "other-current-assets-other", groupKey: "other-current-assets", label: "Other current assets", noteNumber: "18", noteTitle: noteTitleByNumber["18"], statementArea: "balance-sheet", keywords: ["asset", "receivable"] },
-  { key: "other-tax-assets-gst", groupKey: "other-tax-assets-net", label: "GST and indirect tax balances", noteNumber: "18", noteTitle: noteTitleByNumber["18"], statementArea: "balance-sheet", keywords: ["gst", "indirect tax"] },
-  { key: "other-tax-assets-tds", groupKey: "other-tax-assets-net", label: "TDS / TCS receivable", noteNumber: "18", noteTitle: noteTitleByNumber["18"], statementArea: "balance-sheet", keywords: ["tds", "tcs"] },
-  { key: "other-tax-assets-advance-tax", groupKey: "other-tax-assets-net", label: "Advance income tax", noteNumber: "18", noteTitle: noteTitleByNumber["18"], statementArea: "balance-sheet", keywords: ["advance tax", "income tax"] },
-  { key: "other-tax-assets-other", groupKey: "other-tax-assets-net", label: "Other tax assets", noteNumber: "18", noteTitle: noteTitleByNumber["18"], statementArea: "balance-sheet", keywords: ["tax"] },
-  { key: "revenue-sales", groupKey: "revenue-from-operations", label: "Sales of products", noteNumber: "19", noteTitle: noteTitleByNumber["19"], statementArea: "profit-and-loss", keywords: ["sales", "product"] },
-  { key: "revenue-job-work", groupKey: "revenue-from-operations", label: "Job work income", noteNumber: "19", noteTitle: noteTitleByNumber["19"], statementArea: "profit-and-loss", keywords: ["job work"] },
-  { key: "revenue-scrap", groupKey: "revenue-from-operations", label: "Scrap sales", noteNumber: "19", noteTitle: noteTitleByNumber["19"], statementArea: "profit-and-loss", keywords: ["scrap"] },
-  { key: "revenue-export-incentive", groupKey: "revenue-from-operations", label: "Export incentives and duty benefits", noteNumber: "19", noteTitle: noteTitleByNumber["19"], statementArea: "profit-and-loss", keywords: ["export incentive", "duty drawback", "rodtep"] },
-  { key: "revenue-other-operating", groupKey: "revenue-from-operations", label: "Other operating revenue", noteNumber: "19", noteTitle: noteTitleByNumber["19"], statementArea: "profit-and-loss", keywords: ["operating", "revenue"] },
-  { key: "other-income-interest", groupKey: "other-income", label: "Interest income", noteNumber: "20", noteTitle: noteTitleByNumber["20"], statementArea: "profit-and-loss", keywords: ["interest"] },
-  { key: "other-income-forex", groupKey: "other-income", label: "Foreign exchange gain", noteNumber: "20", noteTitle: noteTitleByNumber["20"], statementArea: "profit-and-loss", keywords: ["forex", "exchange"] },
-  { key: "other-income-misc", groupKey: "other-income", label: "Miscellaneous income", noteNumber: "20", noteTitle: noteTitleByNumber["20"], statementArea: "profit-and-loss", keywords: ["income", "misc"] },
-  { key: "materials-raw-material", groupKey: "cost-of-material-consumed", label: "Raw material consumed", noteNumber: "21", noteTitle: noteTitleByNumber["21"], statementArea: "profit-and-loss", keywords: ["raw material"] },
-  { key: "materials-packing", groupKey: "cost-of-material-consumed", label: "Packing material", noteNumber: "21", noteTitle: noteTitleByNumber["21"], statementArea: "profit-and-loss", keywords: ["packing"] },
-  { key: "materials-power-fuel", groupKey: "cost-of-material-consumed", label: "Power, fuel and utilities", noteNumber: "21", noteTitle: noteTitleByNumber["21"], statementArea: "profit-and-loss", keywords: ["power", "fuel", "steam", "utility"] },
-  { key: "materials-job-work", groupKey: "cost-of-material-consumed", label: "Job work and processing charges", noteNumber: "21", noteTitle: noteTitleByNumber["21"], statementArea: "profit-and-loss", keywords: ["jobwork", "job work", "labour charges", "processing"] },
-  { key: "materials-other", groupKey: "cost-of-material-consumed", label: "Other manufacturing consumption", noteNumber: "21", noteTitle: noteTitleByNumber["21"], statementArea: "profit-and-loss", keywords: ["material", "consumption", "cogm", "cogs"] },
-  { key: "materials-change-fg-wip", groupKey: "changes-in-inventories-of-finished-goods-and-work-in-progress", label: "Changes in finished goods and work-in-progress", noteNumber: "21", noteTitle: noteTitleByNumber["21"], statementArea: "profit-and-loss", keywords: ["finished goods", "work in progress", "change in stock", "semi-finished"] },
-  { key: "employee-salaries", groupKey: "employee-benefits-expense", label: "Salaries and wages", noteNumber: "22", noteTitle: noteTitleByNumber["22"], statementArea: "profit-and-loss", keywords: ["salary", "wages"] },
-  { key: "employee-contributions", groupKey: "employee-benefits-expense", label: "Contribution to provident and other funds", noteNumber: "22", noteTitle: noteTitleByNumber["22"], statementArea: "profit-and-loss", keywords: ["pf", "esic", "provident", "fund"] },
-  { key: "employee-bonus", groupKey: "employee-benefits-expense", label: "Bonus and incentives", noteNumber: "22", noteTitle: noteTitleByNumber["22"], statementArea: "profit-and-loss", keywords: ["bonus", "incentive"] },
-  { key: "employee-staff-welfare", groupKey: "employee-benefits-expense", label: "Staff welfare", noteNumber: "22", noteTitle: noteTitleByNumber["22"], statementArea: "profit-and-loss", keywords: ["welfare", "medical", "training"] },
-  { key: "employee-other", groupKey: "employee-benefits-expense", label: "Other employee benefits", noteNumber: "22", noteTitle: noteTitleByNumber["22"], statementArea: "profit-and-loss", keywords: ["employee", "staff"] },
-  { key: "finance-interest", groupKey: "finance-costs", label: "Interest expense", noteNumber: "23", noteTitle: noteTitleByNumber["23"], statementArea: "profit-and-loss", keywords: ["interest"] },
-  { key: "finance-bank-charges", groupKey: "finance-costs", label: "Bank charges", noteNumber: "23", noteTitle: noteTitleByNumber["23"], statementArea: "profit-and-loss", keywords: ["bank charges", "commission charges"] },
-  { key: "finance-borrowing-costs", groupKey: "finance-costs", label: "Borrowing costs", noteNumber: "23", noteTitle: noteTitleByNumber["23"], statementArea: "profit-and-loss", keywords: ["cash credit", "loan", "borrowing", "buyer"] },
-  { key: "finance-other", groupKey: "finance-costs", label: "Other finance costs", noteNumber: "23", noteTitle: noteTitleByNumber["23"], statementArea: "profit-and-loss", keywords: ["finance"] },
-  { key: "depreciation-ppe", groupKey: "depreciation-and-amortisation-expense", label: "Depreciation on PPE", noteNumber: "24", noteTitle: noteTitleByNumber["24"], statementArea: "profit-and-loss", keywords: ["depreci"] },
-  { key: "depreciation-rou", groupKey: "depreciation-and-amortisation-expense", label: "Depreciation on right-of-use assets", noteNumber: "24", noteTitle: noteTitleByNumber["24"], statementArea: "profit-and-loss", keywords: ["right of use", "rou"] },
-  { key: "depreciation-amortisation", groupKey: "depreciation-and-amortisation-expense", label: "Amortisation of intangibles", noteNumber: "24", noteTitle: noteTitleByNumber["24"], statementArea: "profit-and-loss", keywords: ["amort", "software"] },
-  { key: "other-expenses-rent", groupKey: "other-expenses", label: "Rent", noteNumber: "25", noteTitle: noteTitleByNumber["25"], statementArea: "profit-and-loss", keywords: ["rent"] },
-  { key: "other-expenses-repairs", groupKey: "other-expenses", label: "Repairs and maintenance", noteNumber: "25", noteTitle: noteTitleByNumber["25"], statementArea: "profit-and-loss", keywords: ["repair", "maintenance"] },
-  { key: "other-expenses-freight", groupKey: "other-expenses", label: "Freight and transport", noteNumber: "25", noteTitle: noteTitleByNumber["25"], statementArea: "profit-and-loss", keywords: ["freight", "transport", "carriage"] },
-  { key: "other-expenses-selling", groupKey: "other-expenses", label: "Selling and distribution", noteNumber: "25", noteTitle: noteTitleByNumber["25"], statementArea: "profit-and-loss", keywords: ["selling", "distribution", "advertising"] },
-  { key: "other-expenses-legal", groupKey: "other-expenses", label: "Legal and professional", noteNumber: "25", noteTitle: noteTitleByNumber["25"], statementArea: "profit-and-loss", keywords: ["legal", "professional", "consultancy", "audit"] },
-  { key: "other-expenses-admin", groupKey: "other-expenses", label: "Administrative overheads", noteNumber: "25", noteTitle: noteTitleByNumber["25"], statementArea: "profit-and-loss", keywords: ["office", "admin", "travelling", "telephone"] },
-  { key: "other-expenses-other", groupKey: "other-expenses", label: "Other expenses", noteNumber: "25", noteTitle: noteTitleByNumber["25"], statementArea: "profit-and-loss", keywords: ["expense"] },
-  { key: "tax-current", groupKey: "current-income-tax", label: "Current tax", noteNumber: "26", noteTitle: noteTitleByNumber["26"], statementArea: "profit-and-loss", keywords: ["current tax", "income tax"] },
-  { key: "tax-deferred", groupKey: "tax-expense", label: "Deferred tax expense", noteNumber: "26", noteTitle: noteTitleByNumber["26"], statementArea: "profit-and-loss", keywords: ["deferred tax"] },
-  { key: "tax-prior-year", groupKey: "tax-expense", label: "Tax relating to earlier years", noteNumber: "26", noteTitle: noteTitleByNumber["26"], statementArea: "profit-and-loss", keywords: ["earlier year", "prior year"] },
-  { key: "tax-other", groupKey: "tax-expense", label: "Other tax expense", noteNumber: "26", noteTitle: noteTitleByNumber["26"], statementArea: "profit-and-loss", keywords: ["tax"] },
-  { key: "tax-current-expense", groupKey: "tax-expense", label: "Current tax", noteNumber: "26", noteTitle: noteTitleByNumber["26"], statementArea: "profit-and-loss", keywords: ["current tax", "income tax"] },
+  {
+    key: "equity-share-capital-main",
+    groupKey: "equity-share-capital",
+    label: "Equity share capital",
+    noteNumber: "3",
+    noteTitle: noteTitleByNumber["3"],
+    statementArea: "balance-sheet",
+    keywords: ["share capital", "equity share"],
+  },
+  {
+    key: "equity-share-capital-ccps",
+    groupKey: "equity-share-capital",
+    label: "Preference shares / CCPS",
+    noteNumber: "3",
+    noteTitle: noteTitleByNumber["3"],
+    statementArea: "balance-sheet",
+    keywords: ["ccps", "preference"],
+  },
+
+  {
+    key: "other-equity-securities-premium",
+    groupKey: "other-equity",
+    label: "Securities premium",
+    noteNumber: "4",
+    noteTitle: noteTitleByNumber["4"],
+    statementArea: "balance-sheet",
+    keywords: ["securities premium", "premium"],
+  },
+  {
+    key: "other-equity-retained-earnings",
+    groupKey: "other-equity",
+    label: "Retained earnings",
+    noteNumber: "4",
+    noteTitle: noteTitleByNumber["4"],
+    statementArea: "balance-sheet",
+    keywords: [
+      "retained",
+      "profit & loss account",
+      "profit and loss account",
+      "surplus",
+    ],
+  },
+  {
+    key: "other-equity-other-reserves",
+    groupKey: "other-equity",
+    label: "Other reserves",
+    noteNumber: "4",
+    noteTitle: noteTitleByNumber["4"],
+    statementArea: "balance-sheet",
+    keywords: ["reserve", "equity"],
+  },
+
+  {
+    key: "borrowings-term-loans",
+    groupKey: "borrowings",
+    label: "Term loans",
+    noteNumber: "5",
+    noteTitle: noteTitleByNumber["5"],
+    statementArea: "balance-sheet",
+    bucketOverride: "non-current-liabilities",
+    keywords: ["term loan", "tl_", "vehicle loan"],
+  },
+  {
+    key: "borrowings-lease-liabilities",
+    groupKey: "borrowings",
+    label: "Lease liabilities",
+    noteNumber: "5",
+    noteTitle: noteTitleByNumber["5"],
+    statementArea: "balance-sheet",
+    bucketOverride: "non-current-liabilities",
+    keywords: ["lease liability"],
+  },
+  {
+    key: "borrowings-other-long-term",
+    groupKey: "borrowings",
+    label: "Other long-term borrowings",
+    noteNumber: "5",
+    noteTitle: noteTitleByNumber["5"],
+    statementArea: "balance-sheet",
+    bucketOverride: "non-current-liabilities",
+    keywords: ["borrowing", "loan"],
+  },
+  {
+    key: "borrowings-cash-credit",
+    groupKey: "borrowings",
+    label: "Cash credit",
+    noteNumber: "8",
+    noteTitle: noteTitleByNumber["8"],
+    statementArea: "balance-sheet",
+    bucketOverride: "current-liabilities",
+    keywords: ["cash credit", "cc_"],
+  },
+  {
+    key: "borrowings-working-capital-demand-loan",
+    groupKey: "borrowings",
+    label: "Working capital demand loan",
+    noteNumber: "8",
+    noteTitle: noteTitleByNumber["8"],
+    statementArea: "balance-sheet",
+    bucketOverride: "current-liabilities",
+    keywords: ["wcdl"],
+  },
+  {
+    key: "borrowings-buyers-credit",
+    groupKey: "borrowings",
+    label: "Buyer's credit",
+    noteNumber: "8",
+    noteTitle: noteTitleByNumber["8"],
+    statementArea: "balance-sheet",
+    bucketOverride: "current-liabilities",
+    keywords: ["buyer", "buyers credit"],
+  },
+  {
+    key: "borrowings-current-maturities",
+    groupKey: "borrowings",
+    label: "Current maturities and accrued interest",
+    noteNumber: "8",
+    noteTitle: noteTitleByNumber["8"],
+    statementArea: "balance-sheet",
+    bucketOverride: "current-liabilities",
+    keywords: ["current maturity", "interest accrued"],
+  },
+  {
+    key: "borrowings-other-short-term",
+    groupKey: "borrowings",
+    label: "Other short-term borrowings",
+    noteNumber: "8",
+    noteTitle: noteTitleByNumber["8"],
+    statementArea: "balance-sheet",
+    bucketOverride: "current-liabilities",
+    keywords: ["borrowing", "loan"],
+  },
+  {
+    key: "deferred-tax-main",
+    groupKey: "deferred-tax-liabilities-net",
+    label: "Deferred tax",
+    noteNumber: "6",
+    noteTitle: noteTitleByNumber["6"],
+    statementArea: "balance-sheet",
+    keywords: ["deferred tax"],
+  },
+
+  {
+    key: "provisions-gratuity",
+    groupKey: "provisions",
+    label: "Gratuity and leave benefits",
+    noteNumber: "7",
+    noteTitle: noteTitleByNumber["7"],
+    statementArea: "balance-sheet",
+    bucketOverride: "non-current-liabilities",
+    keywords: [
+      "gratuity",
+      "leave salary",
+      "leave encashment",
+      "compensated absences",
+    ],
+  },
+  {
+    key: "provisions-other-long-term",
+    groupKey: "provisions",
+    label: "Other long-term provisions",
+    noteNumber: "7",
+    noteTitle: noteTitleByNumber["7"],
+    statementArea: "balance-sheet",
+    bucketOverride: "non-current-liabilities",
+    keywords: ["provision"],
+  },
+  {
+    key: "provisions-bonus",
+    groupKey: "provisions",
+    label: "Bonus and incentive provisions",
+    noteNumber: "11",
+    noteTitle: noteTitleByNumber["11"],
+    statementArea: "balance-sheet",
+    bucketOverride: "current-liabilities",
+    keywords: ["bonus", "incentive"],
+  },
+  {
+    key: "provisions-tax-and-statutory",
+    groupKey: "provisions",
+    label: "Tax and statutory provisions",
+    noteNumber: "11",
+    noteTitle: noteTitleByNumber["11"],
+    statementArea: "balance-sheet",
+    bucketOverride: "current-liabilities",
+    keywords: ["tax", "statutory", "msme"],
+  },
+  {
+    key: "provisions-other-short-term",
+    groupKey: "provisions",
+    label: "Other short-term provisions",
+    noteNumber: "11",
+    noteTitle: noteTitleByNumber["11"],
+    statementArea: "balance-sheet",
+    bucketOverride: "current-liabilities",
+    keywords: ["provision", "salary payable"],
+  },
+
+  {
+    key: "trade-payables-msme",
+    groupKey: "trade-payables",
+    label: "MSME trade payables",
+    noteNumber: "9",
+    noteTitle: noteTitleByNumber["9"],
+    statementArea: "balance-sheet",
+    keywords: ["msme"],
+  },
+  {
+    key: "trade-payables-raw-material",
+    groupKey: "trade-payables",
+    label: "Trade creditors for materials",
+    noteNumber: "9",
+    noteTitle: noteTitleByNumber["9"],
+    statementArea: "balance-sheet",
+    keywords: ["creditor", "supplier", "material"],
+  },
+  {
+    key: "trade-payables-services",
+    groupKey: "trade-payables",
+    label: "Trade creditors for services",
+    noteNumber: "9",
+    noteTitle: noteTitleByNumber["9"],
+    statementArea: "balance-sheet",
+    keywords: ["job work", "service", "expense payable"],
+  },
+  {
+    key: "trade-payables-other",
+    groupKey: "trade-payables",
+    label: "Other trade payables",
+    noteNumber: "9",
+    noteTitle: noteTitleByNumber["9"],
+    statementArea: "balance-sheet",
+    keywords: ["payable", "payables", "creditor"],
+  },
+
+  {
+    key: "other-financial-liabilities-employee",
+    groupKey: "other-financial-liabilities",
+    label: "Employee dues",
+    noteNumber: "10",
+    noteTitle: noteTitleByNumber["10"],
+    statementArea: "balance-sheet",
+    keywords: ["salary", "bonus", "employee", "pf", "esic"],
+  },
+  {
+    key: "other-financial-liabilities-statutory",
+    groupKey: "other-financial-liabilities",
+    label: "Statutory dues payable",
+    noteNumber: "10",
+    noteTitle: noteTitleByNumber["10"],
+    statementArea: "balance-sheet",
+    keywords: ["gst", "tds", "tcs", "tax", "duty"],
+  },
+  {
+    key: "other-financial-liabilities-security",
+    groupKey: "other-financial-liabilities",
+    label: "Security deposits and other balances",
+    noteNumber: "10",
+    noteTitle: noteTitleByNumber["10"],
+    statementArea: "balance-sheet",
+    keywords: ["deposit", "retention"],
+  },
+  {
+    key: "other-financial-liabilities-other",
+    groupKey: "other-financial-liabilities",
+    label: "Other financial liabilities",
+    noteNumber: "10",
+    noteTitle: noteTitleByNumber["10"],
+    statementArea: "balance-sheet",
+    keywords: ["liability", "payable"],
+  },
+  {
+    key: "other-current-liabilities-customer-advances",
+    groupKey: "other-current-liabilities",
+    label: "Advances from customers",
+    noteNumber: "10",
+    noteTitle: noteTitleByNumber["10"],
+    statementArea: "balance-sheet",
+    keywords: ["advance from customer", "customer advance"],
+  },
+  {
+    key: "other-current-liabilities-statutory",
+    groupKey: "other-current-liabilities",
+    label: "Statutory liabilities",
+    noteNumber: "10",
+    noteTitle: noteTitleByNumber["10"],
+    statementArea: "balance-sheet",
+    keywords: ["gst", "tds", "tcs", "tax", "duty"],
+  },
+  {
+    key: "other-current-liabilities-accrued-expenses",
+    groupKey: "other-current-liabilities",
+    label: "Accrued expenses",
+    noteNumber: "10",
+    noteTitle: noteTitleByNumber["10"],
+    statementArea: "balance-sheet",
+    keywords: ["accrued", "expense payable", "salary payable"],
+  },
+  {
+    key: "other-current-liabilities-other",
+    groupKey: "other-current-liabilities",
+    label: "Other current liabilities",
+    noteNumber: "10",
+    noteTitle: noteTitleByNumber["10"],
+    statementArea: "balance-sheet",
+    keywords: ["liability", "payable"],
+  },
+
+  {
+    key: "ppe-freehold-land",
+    groupKey: "property-plant-and-equipment",
+    label: "Freehold land",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["freehold land", "land"],
+  },
+  {
+    key: "ppe-building",
+    groupKey: "property-plant-and-equipment",
+    label: "Building",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["building"],
+  },
+  {
+    key: "ppe-plant-machinery",
+    groupKey: "property-plant-and-equipment",
+    label: "Plant and machinery",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["plant", "machinery"],
+  },
+  {
+    key: "ppe-office-equipment",
+    groupKey: "property-plant-and-equipment",
+    label: "Office equipment",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["office equipment", "office equiment"],
+  },
+  {
+    key: "ppe-computers",
+    groupKey: "property-plant-and-equipment",
+    label: "Computers",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["computer"],
+  },
+  {
+    key: "ppe-furniture-fixtures",
+    groupKey: "property-plant-and-equipment",
+    label: "Furniture and fixtures",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["furniture", "fixture"],
+  },
+  {
+    key: "ppe-electrical-fittings",
+    groupKey: "property-plant-and-equipment",
+    label: "Electrical fittings",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["electrical"],
+  },
+  {
+    key: "ppe-capital-work-in-progress",
+    groupKey: "property-plant-and-equipment",
+    label: "Capital work-in-progress",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["capital work in progress", "cwip", "capital wip"],
+  },
+  {
+    key: "ppe-leasehold-land",
+    groupKey: "property-plant-and-equipment",
+    label: "Leasehold land / right-of-use asset",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["leasehold", "right of use", "rou"],
+  },
+  {
+    key: "ppe-building-on-lease",
+    groupKey: "property-plant-and-equipment",
+    label: "Building on lease",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["building on lease"],
+  },
+  {
+    key: "ppe-intangible-assets",
+    groupKey: "property-plant-and-equipment",
+    label: "Intangible assets",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["intangible", "software", "license"],
+  },
+  {
+    key: "ppe-other",
+    groupKey: "property-plant-and-equipment",
+    label: "Other property, plant and equipment",
+    noteNumber: "12",
+    noteTitle: noteTitleByNumber["12"],
+    statementArea: "balance-sheet",
+    keywords: ["asset"],
+  },
+
+  {
+    key: "non-current-assets-capital-advances",
+    groupKey: "non-current-assets",
+    label: "Capital advances",
+    noteNumber: "13",
+    noteTitle: noteTitleByNumber["13"],
+    statementArea: "balance-sheet",
+    keywords: ["capital advance"],
+  },
+  {
+    key: "non-current-assets-long-term-advances",
+    groupKey: "non-current-assets",
+    label: "Long-term advances",
+    noteNumber: "13",
+    noteTitle: noteTitleByNumber["13"],
+    statementArea: "balance-sheet",
+    keywords: ["advance", "long term"],
+  },
+  {
+    key: "non-current-assets-other",
+    groupKey: "non-current-assets",
+    label: "Other non-current assets",
+    noteNumber: "13",
+    noteTitle: noteTitleByNumber["13"],
+    statementArea: "balance-sheet",
+    keywords: ["asset"],
+  },
+  {
+    key: "other-financial-assets-investments",
+    groupKey: "other-financial-assets",
+    label: "Investments",
+    noteNumber: "13",
+    noteTitle: noteTitleByNumber["13"],
+    statementArea: "balance-sheet",
+    keywords: ["investment"],
+  },
+  {
+    key: "other-financial-assets-long-term-loans",
+    groupKey: "other-financial-assets",
+    label: "Loans and advances",
+    noteNumber: "13",
+    noteTitle: noteTitleByNumber["13"],
+    statementArea: "balance-sheet",
+    keywords: ["loan", "advance"],
+  },
+  {
+    key: "other-financial-assets-security-deposits",
+    groupKey: "other-financial-assets",
+    label: "Security deposits",
+    noteNumber: "13",
+    noteTitle: noteTitleByNumber["13"],
+    statementArea: "balance-sheet",
+    keywords: ["deposit", "fd_", "security"],
+  },
+  {
+    key: "other-financial-assets-other",
+    groupKey: "other-financial-assets",
+    label: "Other non-current financial assets",
+    noteNumber: "13",
+    noteTitle: noteTitleByNumber["13"],
+    statementArea: "balance-sheet",
+    keywords: ["financial"],
+  },
+
+  {
+    key: "inventories-raw-materials",
+    groupKey: "inventories",
+    label: "Raw materials",
+    noteNumber: "14",
+    noteTitle: noteTitleByNumber["14"],
+    statementArea: "balance-sheet",
+    keywords: ["raw material"],
+  },
+  {
+    key: "inventories-work-in-progress",
+    groupKey: "inventories",
+    label: "Work-in-progress",
+    noteNumber: "14",
+    noteTitle: noteTitleByNumber["14"],
+    statementArea: "balance-sheet",
+    keywords: ["work in progress", "wip"],
+  },
+  {
+    key: "inventories-semi-finished-goods",
+    groupKey: "inventories",
+    label: "Semi-finished goods",
+    noteNumber: "14",
+    noteTitle: noteTitleByNumber["14"],
+    statementArea: "balance-sheet",
+    keywords: ["semi-finished", "sfg"],
+  },
+  {
+    key: "inventories-finished-goods",
+    groupKey: "inventories",
+    label: "Finished goods",
+    noteNumber: "14",
+    noteTitle: noteTitleByNumber["14"],
+    statementArea: "balance-sheet",
+    keywords: ["finished goods"],
+  },
+  {
+    key: "inventories-stores-and-spares",
+    groupKey: "inventories",
+    label: "Stores and spares",
+    noteNumber: "14",
+    noteTitle: noteTitleByNumber["14"],
+    statementArea: "balance-sheet",
+    keywords: ["stores", "spares"],
+  },
+  {
+    key: "inventories-stock-in-transit",
+    groupKey: "inventories",
+    label: "Stock in transit",
+    noteNumber: "14",
+    noteTitle: noteTitleByNumber["14"],
+    statementArea: "balance-sheet",
+    keywords: ["transit"],
+  },
+  {
+    key: "inventories-other",
+    groupKey: "inventories",
+    label: "Other inventories",
+    noteNumber: "14",
+    noteTitle: noteTitleByNumber["14"],
+    statementArea: "balance-sheet",
+    keywords: ["inventory", "stock"],
+  },
+
+  {
+    key: "trade-receivables-domestic",
+    groupKey: "trade-receivables",
+    label: "Domestic trade receivables",
+    noteNumber: "15",
+    noteTitle: noteTitleByNumber["15"],
+    statementArea: "balance-sheet",
+    keywords: ["domestic"],
+  },
+  {
+    key: "trade-receivables-export",
+    groupKey: "trade-receivables",
+    label: "Export trade receivables",
+    noteNumber: "15",
+    noteTitle: noteTitleByNumber["15"],
+    statementArea: "balance-sheet",
+    keywords: ["export"],
+  },
+  {
+    key: "trade-receivables-related-party",
+    groupKey: "trade-receivables",
+    label: "Related party receivables",
+    noteNumber: "15",
+    noteTitle: noteTitleByNumber["15"],
+    statementArea: "balance-sheet",
+    keywords: ["related party"],
+  },
+  {
+    key: "trade-receivables-other",
+    groupKey: "trade-receivables",
+    label: "Other trade receivables",
+    noteNumber: "15",
+    noteTitle: noteTitleByNumber["15"],
+    statementArea: "balance-sheet",
+    keywords: ["receivable", "debtor", "customer"],
+  },
+  {
+    key: "cash-bank-balances",
+    groupKey: "cash-cash-equivalents",
+    label: "Balances with banks",
+    noteNumber: "16",
+    noteTitle: noteTitleByNumber["16"],
+    statementArea: "balance-sheet",
+    keywords: ["bank", "ca_"],
+  },
+  {
+    key: "cash-cash-on-hand",
+    groupKey: "cash-cash-equivalents",
+    label: "Cash on hand",
+    noteNumber: "16",
+    noteTitle: noteTitleByNumber["16"],
+    statementArea: "balance-sheet",
+    keywords: ["cash in hand", "cash on hand"],
+  },
+  {
+    key: "cash-other-bank-balances",
+    groupKey: "cash-cash-equivalents",
+    label: "Other bank balances",
+    noteNumber: "16",
+    noteTitle: noteTitleByNumber["16"],
+    statementArea: "balance-sheet",
+    keywords: ["margin", "fixed deposit", "earmark"],
+  },
+  {
+    key: "cash-other",
+    groupKey: "cash-cash-equivalents",
+    label: "Other cash equivalents",
+    noteNumber: "16",
+    noteTitle: noteTitleByNumber["16"],
+    statementArea: "balance-sheet",
+    keywords: ["cash", "bank"],
+  },
+
+  {
+    key: "other-current-assets-short-term-loans",
+    groupKey: "other-current-assets",
+    label: "Short-term loans and advances",
+    noteNumber: "17",
+    noteTitle: noteTitleByNumber["17"],
+    statementArea: "balance-sheet",
+    keywords: ["loan", "advance", "advance to", "prepaid rent"],
+  },
+  {
+    key: "other-current-assets-prepaids",
+    groupKey: "other-current-assets",
+    label: "Prepaid expenses",
+    noteNumber: "18",
+    noteTitle: noteTitleByNumber["18"],
+    statementArea: "balance-sheet",
+    keywords: ["prepaid"],
+  },
+  {
+    key: "other-current-assets-balances-with-authorities",
+    groupKey: "other-current-assets",
+    label: "Balances with authorities",
+    noteNumber: "18",
+    noteTitle: noteTitleByNumber["18"],
+    statementArea: "balance-sheet",
+    keywords: ["gst", "tds", "tcs", "tax", "duty"],
+  },
+  {
+    key: "other-current-assets-other",
+    groupKey: "other-current-assets",
+    label: "Other current assets",
+    noteNumber: "18",
+    noteTitle: noteTitleByNumber["18"],
+    statementArea: "balance-sheet",
+    keywords: ["asset", "receivable"],
+  },
+
+  {
+    key: "other-tax-assets-gst",
+    groupKey: "other-tax-assets-net",
+    label: "GST and indirect tax balances",
+    noteNumber: "18",
+    noteTitle: noteTitleByNumber["18"],
+    statementArea: "balance-sheet",
+    keywords: ["gst", "indirect tax"],
+  },
+  {
+    key: "other-tax-assets-tds",
+    groupKey: "other-tax-assets-net",
+    label: "TDS / TCS receivable",
+    noteNumber: "18",
+    noteTitle: noteTitleByNumber["18"],
+    statementArea: "balance-sheet",
+    keywords: ["tds", "tcs"],
+  },
+  {
+    key: "other-tax-assets-advance-tax",
+    groupKey: "other-tax-assets-net",
+    label: "Advance income tax",
+    noteNumber: "18",
+    noteTitle: noteTitleByNumber["18"],
+    statementArea: "balance-sheet",
+    keywords: ["advance tax", "income tax"],
+  },
+  {
+    key: "other-tax-assets-other",
+    groupKey: "other-tax-assets-net",
+    label: "Other tax assets",
+    noteNumber: "18",
+    noteTitle: noteTitleByNumber["18"],
+    statementArea: "balance-sheet",
+    keywords: ["tax"],
+  },
+
+  {
+    key: "revenue-sales",
+    groupKey: "revenue-from-operations",
+    label: "Sales of products",
+    noteNumber: "19",
+    noteTitle: noteTitleByNumber["19"],
+    statementArea: "profit-and-loss",
+    keywords: ["sales", "product"],
+  },
+  {
+    key: "revenue-job-work",
+    groupKey: "revenue-from-operations",
+    label: "Job work income",
+    noteNumber: "19",
+    noteTitle: noteTitleByNumber["19"],
+    statementArea: "profit-and-loss",
+    keywords: ["job work"],
+  },
+  {
+    key: "revenue-scrap",
+    groupKey: "revenue-from-operations",
+    label: "Scrap sales",
+    noteNumber: "19",
+    noteTitle: noteTitleByNumber["19"],
+    statementArea: "profit-and-loss",
+    keywords: ["scrap"],
+  },
+  {
+    key: "revenue-export-incentive",
+    groupKey: "revenue-from-operations",
+    label: "Export incentives and duty benefits",
+    noteNumber: "19",
+    noteTitle: noteTitleByNumber["19"],
+    statementArea: "profit-and-loss",
+    keywords: ["export incentive", "duty drawback", "rodtep"],
+  },
+  {
+    key: "revenue-other-operating",
+    groupKey: "revenue-from-operations",
+    label: "Other operating revenue",
+    noteNumber: "19",
+    noteTitle: noteTitleByNumber["19"],
+    statementArea: "profit-and-loss",
+    keywords: ["operating", "revenue"],
+  },
+
+  {
+    key: "other-income-interest",
+    groupKey: "other-income",
+    label: "Interest income",
+    noteNumber: "20",
+    noteTitle: noteTitleByNumber["20"],
+    statementArea: "profit-and-loss",
+    keywords: ["interest"],
+  },
+  {
+    key: "other-income-forex",
+    groupKey: "other-income",
+    label: "Foreign exchange gain",
+    noteNumber: "20",
+    noteTitle: noteTitleByNumber["20"],
+    statementArea: "profit-and-loss",
+    keywords: ["forex", "exchange"],
+  },
+  {
+    key: "other-income-misc",
+    groupKey: "other-income",
+    label: "Miscellaneous income",
+    noteNumber: "20",
+    noteTitle: noteTitleByNumber["20"],
+    statementArea: "profit-and-loss",
+    keywords: ["income", "misc"],
+  },
+
+  {
+    key: "materials-raw-material",
+    groupKey: "cost-of-material-consumed",
+    label: "Raw material consumed",
+    noteNumber: "21",
+    noteTitle: noteTitleByNumber["21"],
+    statementArea: "profit-and-loss",
+    keywords: ["raw material"],
+  },
+  {
+    key: "materials-packing",
+    groupKey: "cost-of-material-consumed",
+    label: "Packing material",
+    noteNumber: "21",
+    noteTitle: noteTitleByNumber["21"],
+    statementArea: "profit-and-loss",
+    keywords: ["packing"],
+  },
+  {
+    key: "materials-power-fuel",
+    groupKey: "cost-of-material-consumed",
+    label: "Power, fuel and utilities",
+    noteNumber: "21",
+    noteTitle: noteTitleByNumber["21"],
+    statementArea: "profit-and-loss",
+    keywords: ["power", "fuel", "steam", "utility"],
+  },
+  {
+    key: "materials-job-work",
+    groupKey: "cost-of-material-consumed",
+    label: "Job work and processing charges",
+    noteNumber: "21",
+    noteTitle: noteTitleByNumber["21"],
+    statementArea: "profit-and-loss",
+    keywords: ["jobwork", "job work", "labour charges", "processing"],
+  },
+  {
+    key: "materials-other",
+    groupKey: "cost-of-material-consumed",
+    label: "Other manufacturing consumption",
+    noteNumber: "21",
+    noteTitle: noteTitleByNumber["21"],
+    statementArea: "profit-and-loss",
+    keywords: ["material", "consumption", "cogm", "cogs"],
+  },
+
+  {
+    key: "materials-change-fg-wip",
+    groupKey: "changes-in-inventories-of-finished-goods-and-work-in-progress",
+    label: "Changes in finished goods and work-in-progress",
+    noteNumber: "21",
+    noteTitle: noteTitleByNumber["21"],
+    statementArea: "profit-and-loss",
+    keywords: [
+      "finished goods",
+      "work in progress",
+      "change in stock",
+      "semi-finished",
+    ],
+  },
+  {
+    key: "employee-salaries",
+    groupKey: "employee-benefits-expense",
+    label: "Salaries and wages",
+    noteNumber: "22",
+    noteTitle: noteTitleByNumber["22"],
+    statementArea: "profit-and-loss",
+    keywords: ["salary", "wages"],
+  },
+  {
+    key: "employee-contributions",
+    groupKey: "employee-benefits-expense",
+    label: "Contribution to provident and other funds",
+    noteNumber: "22",
+    noteTitle: noteTitleByNumber["22"],
+    statementArea: "profit-and-loss",
+    keywords: ["pf", "esic", "provident", "fund"],
+  },
+  {
+    key: "employee-bonus",
+    groupKey: "employee-benefits-expense",
+    label: "Bonus and incentives",
+    noteNumber: "22",
+    noteTitle: noteTitleByNumber["22"],
+    statementArea: "profit-and-loss",
+    keywords: ["bonus", "incentive"],
+  },
+  {
+    key: "employee-staff-welfare",
+    groupKey: "employee-benefits-expense",
+    label: "Staff welfare",
+    noteNumber: "22",
+    noteTitle: noteTitleByNumber["22"],
+    statementArea: "profit-and-loss",
+    keywords: ["welfare", "medical", "training"],
+  },
+  {
+    key: "employee-other",
+    groupKey: "employee-benefits-expense",
+    label: "Other employee benefits",
+    noteNumber: "22",
+    noteTitle: noteTitleByNumber["22"],
+    statementArea: "profit-and-loss",
+    keywords: ["employee", "staff"],
+  },
+  {
+    key: "finance-interest",
+    groupKey: "finance-costs",
+    label: "Interest expense",
+    noteNumber: "23",
+    noteTitle: noteTitleByNumber["23"],
+    statementArea: "profit-and-loss",
+    keywords: ["interest"],
+  },
+  {
+    key: "finance-bank-charges",
+    groupKey: "finance-costs",
+    label: "Bank charges",
+    noteNumber: "23",
+    noteTitle: noteTitleByNumber["23"],
+    statementArea: "profit-and-loss",
+    keywords: ["bank charges", "commission charges"],
+  },
+  {
+    key: "finance-borrowing-costs",
+    groupKey: "finance-costs",
+    label: "Borrowing costs",
+    noteNumber: "23",
+    noteTitle: noteTitleByNumber["23"],
+    statementArea: "profit-and-loss",
+    keywords: ["cash credit", "loan", "borrowing", "buyer"],
+  },
+  {
+    key: "finance-other",
+    groupKey: "finance-costs",
+    label: "Other finance costs",
+    noteNumber: "23",
+    noteTitle: noteTitleByNumber["23"],
+    statementArea: "profit-and-loss",
+    keywords: ["finance"],
+  },
+  {
+    key: "depreciation-ppe",
+    groupKey: "depreciation-and-amortisation-expense",
+    label: "Depreciation on PPE",
+    noteNumber: "24",
+    noteTitle: noteTitleByNumber["24"],
+    statementArea: "profit-and-loss",
+    keywords: ["depreci"],
+  },
+  {
+    key: "depreciation-rou",
+    groupKey: "depreciation-and-amortisation-expense",
+    label: "Depreciation on right-of-use assets",
+    noteNumber: "24",
+    noteTitle: noteTitleByNumber["24"],
+    statementArea: "profit-and-loss",
+    keywords: ["right of use", "rou"],
+  },
+  {
+    key: "depreciation-amortisation",
+    groupKey: "depreciation-and-amortisation-expense",
+    label: "Amortisation of intangibles",
+    noteNumber: "24",
+    noteTitle: noteTitleByNumber["24"],
+    statementArea: "profit-and-loss",
+    keywords: ["amort", "software"],
+  },
+  {
+    key: "other-expenses-rent",
+    groupKey: "other-expenses",
+    label: "Rent",
+    noteNumber: "25",
+    noteTitle: noteTitleByNumber["25"],
+    statementArea: "profit-and-loss",
+    keywords: ["rent"],
+  },
+  {
+    key: "other-expenses-repairs",
+    groupKey: "other-expenses",
+    label: "Repairs and maintenance",
+    noteNumber: "25",
+    noteTitle: noteTitleByNumber["25"],
+    statementArea: "profit-and-loss",
+    keywords: ["repair", "maintenance"],
+  },
+  {
+    key: "other-expenses-freight",
+    groupKey: "other-expenses",
+    label: "Freight and transport",
+    noteNumber: "25",
+    noteTitle: noteTitleByNumber["25"],
+    statementArea: "profit-and-loss",
+    keywords: ["freight", "transport", "carriage"],
+  },
+  {
+    key: "other-expenses-selling",
+    groupKey: "other-expenses",
+    label: "Selling and distribution",
+    noteNumber: "25",
+    noteTitle: noteTitleByNumber["25"],
+    statementArea: "profit-and-loss",
+    keywords: ["selling", "distribution", "advertising"],
+  },
+  {
+    key: "other-expenses-legal",
+    groupKey: "other-expenses",
+    label: "Legal and professional",
+    noteNumber: "25",
+    noteTitle: noteTitleByNumber["25"],
+    statementArea: "profit-and-loss",
+    keywords: ["legal", "professional", "consultancy", "audit"],
+  },
+  {
+    key: "other-expenses-admin",
+    groupKey: "other-expenses",
+    label: "Administrative overheads",
+    noteNumber: "25",
+    noteTitle: noteTitleByNumber["25"],
+    statementArea: "profit-and-loss",
+    keywords: ["office", "admin", "travelling", "telephone"],
+  },
+  {
+    key: "other-expenses-other",
+    groupKey: "other-expenses",
+    label: "Other expenses",
+    noteNumber: "25",
+    noteTitle: noteTitleByNumber["25"],
+    statementArea: "profit-and-loss",
+    keywords: ["expense"],
+  },
+  {
+    key: "tax-current",
+    groupKey: "current-income-tax",
+    label: "Current tax",
+    noteNumber: "26",
+    noteTitle: noteTitleByNumber["26"],
+    statementArea: "profit-and-loss",
+    keywords: ["current tax", "income tax"],
+  },
+  {
+    key: "tax-deferred",
+    groupKey: "tax-expense",
+    label: "Deferred tax expense",
+    noteNumber: "26",
+    noteTitle: noteTitleByNumber["26"],
+    statementArea: "profit-and-loss",
+    keywords: ["deferred tax"],
+  },
+  {
+    key: "tax-prior-year",
+    groupKey: "tax-expense",
+    label: "Tax relating to earlier years",
+    noteNumber: "26",
+    noteTitle: noteTitleByNumber["26"],
+    statementArea: "profit-and-loss",
+    keywords: ["earlier year", "prior year"],
+  },
+  {
+    key: "tax-other",
+    groupKey: "tax-expense",
+    label: "Other tax expense",
+    noteNumber: "26",
+    noteTitle: noteTitleByNumber["26"],
+    statementArea: "profit-and-loss",
+    keywords: ["tax"],
+  },
+  {
+    key: "tax-current-expense",
+    groupKey: "tax-expense",
+    label: "Current tax",
+    noteNumber: "26",
+    noteTitle: noteTitleByNumber["26"],
+    statementArea: "profit-and-loss",
+    keywords: ["current tax", "income tax"],
+  },
 ];
 
 function resolveScopedWorkspace(scope?: GroupingScope) {
@@ -216,7 +1150,8 @@ function resolveScopedWorkspace(scope?: GroupingScope) {
 
   return {
     companyId: scope?.companyId ?? requireActiveCompany(context).company.id,
-    versionId: scope?.versionId ?? requireActiveCompany(context).currentVersion.id,
+    versionId:
+      scope?.versionId ?? requireActiveCompany(context).currentVersion.id,
   };
 }
 
@@ -228,12 +1163,23 @@ function hasAny(text: string, keywords: string[]) {
   return keywords.some((keyword) => text.includes(keyword));
 }
 
-function accountClassForBucket(bucket: GroupingBucket): LedgerRow["accountClass"] {
-  if (bucket === "equity" || bucket === "non-current-liabilities" || bucket === "current-liabilities" || bucket === "clearing-liabilities") {
+function accountClassForBucket(
+  bucket: GroupingBucket,
+): LedgerRow["accountClass"] {
+  if (
+    bucket === "equity" ||
+    bucket === "non-current-liabilities" ||
+    bucket === "current-liabilities" ||
+    bucket === "clearing-liabilities"
+  ) {
     return "equity-liability";
   }
 
-  if (bucket === "non-current-assets" || bucket === "current-assets" || bucket === "clearing-assets") {
+  if (
+    bucket === "non-current-assets" ||
+    bucket === "current-assets" ||
+    bucket === "clearing-assets"
+  ) {
     return "asset";
   }
 
@@ -259,15 +1205,21 @@ function accountClassForBucket(bucket: GroupingBucket): LedgerRow["accountClass"
   return "other";
 }
 
-async function loadMasterGroupingSource(): Promise<MasterGroupingSource> {
-  return loadMasterGroupingSourceFromDb();
+async function loadMasterGroupingSource(scope?: GroupingScope) {
+  const companyId =
+    scope?.companyId ??
+    requireActiveCompany(resolveWorkspaceContext()).company.id;
+  return loadMasterGroupingSourceFromDb(companyId);
 }
 
-export async function getLedgerGroupingOptions(_scope?: GroupingScope) {
-  return (await loadMasterGroupingSource()).options;
+export async function getLedgerGroupingOptions(scope?: GroupingScope) {
+  return (await loadMasterGroupingSource(scope)).options;
 }
 
-export function getLedgerSubgroupOptions(scope?: GroupingScope, groupKey?: string) {
+export function getLedgerSubgroupOptions(
+  scope?: GroupingScope,
+  groupKey?: string,
+) {
   void scope;
   return subgroupCatalog
     .filter((option) => (groupKey ? option.groupKey === groupKey : true))
@@ -278,17 +1230,31 @@ export function getLedgerSubgroupOptions(scope?: GroupingScope, groupKey?: strin
     });
 }
 
-export async function getMasterGroupingStamp() {
-  return (await loadMasterGroupingSource()).stamp;
+export async function getMasterGroupingStamp(scope?: GroupingScope) {
+  return (await loadMasterGroupingSource(scope)).stamp;
 }
 
-export async function getGroupingOption(groupKey: string, scope?: GroupingScope) {
-  return (await getLedgerGroupingOptions(scope)).find((option) => option.key === groupKey) ?? null;
-}
-
-export function getLedgerSubgroupOption(subgroupKey: string, groupKey?: string) {
+export async function getGroupingOption(
+  groupKey: string,
+  scope?: GroupingScope,
+) {
   return (
-    subgroupCatalog.find((option) => option.key === subgroupKey && (groupKey ? option.groupKey === groupKey : true)) ?? null
+    (await getLedgerGroupingOptions(scope)).find(
+      (option) => option.key === groupKey,
+    ) ?? null
+  );
+}
+
+export function getLedgerSubgroupOption(
+  subgroupKey: string,
+  groupKey?: string,
+) {
+  return (
+    subgroupCatalog.find(
+      (option) =>
+        option.key === subgroupKey &&
+        (groupKey ? option.groupKey === groupKey : true),
+    ) ?? null
   );
 }
 
@@ -297,10 +1263,21 @@ function resolveGroupingSelection(input: {
   label: string;
   glNumber: string;
   glDescription: string;
-}): Omit<ResolvedLedgerGrouping, "subgroupKey" | "subgroupLabel" | "noteNumber" | "noteTitle"> {
+}): Omit<
+  ResolvedLedgerGrouping,
+  "subgroupKey" | "subgroupLabel" | "noteNumber" | "noteTitle"
+> {
   const normalizedLabel = normalizeText(input.label);
   const normalizedDescription = normalizeText(input.glDescription);
-  const currentBorrowingKeywords = ["cash credit", "cc_", "ca_", "wcdl", "buyer", "interest accrued", "buyers credit"];
+  const currentBorrowingKeywords = [
+    "cash credit",
+    "cc_",
+    "ca_",
+    "wcdl",
+    "buyer",
+    "interest accrued",
+    "buyers credit",
+  ];
   const ppeKeywords = [
     "land",
     "building",
@@ -319,7 +1296,10 @@ function resolveGroupingSelection(input: {
     "acc_dep",
   ];
 
-  if (normalizedLabel === "equity share capital" || normalizedLabel === "other equity") {
+  if (
+    normalizedLabel === "equity share capital" ||
+    normalizedLabel === "other equity"
+  ) {
     return {
       key: input.groupKey,
       label: input.label,
@@ -340,7 +1320,9 @@ function resolveGroupingSelection(input: {
       key: input.groupKey,
       label: input.label,
       accountClass: "equity-liability",
-      bucket: isCurrentBorrowing ? "current-liabilities" : "non-current-liabilities",
+      bucket: isCurrentBorrowing
+        ? "current-liabilities"
+        : "non-current-liabilities",
       statementArea: "balance-sheet",
     };
   }
@@ -360,12 +1342,20 @@ function resolveGroupingSelection(input: {
       key: input.groupKey,
       label: input.label,
       accountClass: "equity-liability",
-      bucket: hasAny(normalizedDescription, ["gratuity", "leave salary"]) ? "non-current-liabilities" : "current-liabilities",
+      bucket: hasAny(normalizedDescription, ["gratuity", "leave salary"])
+        ? "non-current-liabilities"
+        : "current-liabilities",
       statementArea: "balance-sheet",
     };
   }
 
-  if (["trade payables", "other current liabilities", "other financial liabilities"].includes(normalizedLabel)) {
+  if (
+    [
+      "trade payables",
+      "other current liabilities",
+      "other financial liabilities",
+    ].includes(normalizedLabel)
+  ) {
     return {
       key: input.groupKey,
       label: input.label,
@@ -397,7 +1387,14 @@ function resolveGroupingSelection(input: {
 
   if (normalizedLabel === "other financial assets") {
     const isNonCurrentFinancialAsset =
-      hasAny(normalizedDescription, ["deposit", "fd_", "security", "capital advance", "investment", "finance lease"]) ||
+      hasAny(normalizedDescription, [
+        "deposit",
+        "fd_",
+        "security",
+        "capital advance",
+        "investment",
+        "finance lease",
+      ]) ||
       input.glNumber.startsWith("203") ||
       input.glNumber.startsWith("209");
 
@@ -405,12 +1402,22 @@ function resolveGroupingSelection(input: {
       key: input.groupKey,
       label: input.label,
       accountClass: "asset",
-      bucket: isNonCurrentFinancialAsset ? "non-current-assets" : "current-assets",
+      bucket: isNonCurrentFinancialAsset
+        ? "non-current-assets"
+        : "current-assets",
       statementArea: "balance-sheet",
     };
   }
 
-  if (["other tax assets (net)", "inventories", "trade receivables", "cash & cash equivalents", "other current assets"].includes(normalizedLabel)) {
+  if (
+    [
+      "other tax assets (net)",
+      "inventories",
+      "trade receivables",
+      "cash & cash equivalents",
+      "other current assets",
+    ].includes(normalizedLabel)
+  ) {
     return {
       key: input.groupKey,
       label: input.label,
@@ -440,7 +1447,12 @@ function resolveGroupingSelection(input: {
     };
   }
 
-  if (["cost of material consumed", "changes in inventories of finished goods and work-in-progress"].includes(normalizedLabel)) {
+  if (
+    [
+      "cost of material consumed",
+      "changes in inventories of finished goods and work-in-progress",
+    ].includes(normalizedLabel)
+  ) {
     return {
       key: input.groupKey,
       label: input.label,
@@ -523,11 +1535,15 @@ function resolveSubgroupSelection(input: {
   groupKey: string;
   glDescription: string;
   subgroupKey?: string;
-}) {
-  const candidates = subgroupCatalog.filter((option) => option.groupKey === input.groupKey);
+  }) {
+  const candidates = subgroupCatalog.filter(
+    (option) => option.groupKey === input.groupKey,
+  );
 
   if (input.subgroupKey) {
-    const explicit = candidates.find((option) => option.key === input.subgroupKey);
+    const explicit = candidates.find(
+      (option) => option.key === input.subgroupKey,
+    );
 
     if (explicit) {
       return explicit;
@@ -535,7 +1551,9 @@ function resolveSubgroupSelection(input: {
   }
 
   const normalizedDescription = normalizeText(input.glDescription);
-  const matched = candidates.find((option) => hasAny(normalizedDescription, option.keywords));
+  const matched = candidates.find((option) =>
+    hasAny(normalizedDescription, option.keywords),
+  );
 
   return matched ?? candidates[0] ?? null;
 }
@@ -558,7 +1576,9 @@ function resolveLedgerGrouping(input: {
   return {
     key: baseSelection.key,
     label: baseSelection.label,
-    accountClass: subgroup?.bucketOverride ? accountClassForBucket(bucket) : baseSelection.accountClass,
+    accountClass: subgroup?.bucketOverride
+      ? accountClassForBucket(bucket)
+      : baseSelection.accountClass,
     bucket,
     statementArea: baseSelection.statementArea,
     subgroupKey: subgroup?.key ?? "",
@@ -578,18 +1598,27 @@ export async function getLedgerGroupingOverrides(scope?: GroupingScope) {
 
 export async function getLedgerGroupingOverrideList(scope?: GroupingScope) {
   const overrides = await getLedgerGroupingOverrides(scope);
-  return Object.values(overrides).sort((left, right) => left.glNumber.localeCompare(right.glNumber));
+  return Object.values(overrides).sort((left, right) =>
+    left.glNumber.localeCompare(right.glNumber),
+  );
 }
 
 export async function getLedgerGroupingOverrideStamp(scope?: GroupingScope) {
   const overrides = await getLedgerGroupingOverrides(scope);
   return Object.values(overrides)
-    .map((override) => `${override.glNumber}:${override.groupKey}:${override.subgroupKey}:${override.updatedAt}`)
+    .map(
+      (override) =>
+        `${override.glNumber}:${override.groupKey}:${override.subgroupKey}:${override.updatedAt}`,
+    )
     .join("|");
 }
 
-export async function getMasterGroupingForLedger(glNumber: string, glDescription: string, _scope?: GroupingScope) {
-  const entry = (await loadMasterGroupingSource()).lookup[glNumber];
+export async function getMasterGroupingForLedger(
+  glNumber: string,
+  glDescription: string,
+  scope?: GroupingScope,
+) {
+  const entry = (await loadMasterGroupingSource(scope)).lookup[glNumber];
 
   if (!entry) {
     return null;
@@ -603,11 +1632,14 @@ export async function getMasterGroupingForLedger(glNumber: string, glDescription
   });
 }
 
-export async function getSuggestedGroupingForLedger(input: {
-  glNumber: string;
-  glDescription: string;
-  bucket: GroupingBucket;
-}, scope?: GroupingScope) {
+export async function getSuggestedGroupingForLedger(
+  input: {
+    glNumber: string;
+    glDescription: string;
+    bucket: GroupingBucket;
+  },
+  scope?: GroupingScope,
+) {
   const normalizedDescription = normalizeText(input.glDescription);
   const options = await getLedgerGroupingOptions(scope);
   const optionsByKey = new Map(options.map((option) => [option.key, option]));
@@ -624,7 +1656,9 @@ export async function getSuggestedGroupingForLedger(input: {
   };
 
   if (input.bucket === "equity") {
-    return hasAny(normalizedDescription, ["share capital", "ccps"]) ? pick("equity-share-capital") : pick("other-equity");
+    return hasAny(normalizedDescription, ["share capital", "ccps"])
+      ? pick("equity-share-capital")
+      : pick("other-equity");
   }
 
   if (input.bucket === "non-current-liabilities") {
@@ -632,7 +1666,9 @@ export async function getSuggestedGroupingForLedger(input: {
       return pick("deferred-tax-liabilities-net");
     }
 
-    if (hasAny(normalizedDescription, ["gratuity", "leave salary", "provision"])) {
+    if (
+      hasAny(normalizedDescription, ["gratuity", "leave salary", "provision"])
+    ) {
       return pick("provisions");
     }
 
@@ -640,15 +1676,41 @@ export async function getSuggestedGroupingForLedger(input: {
   }
 
   if (input.bucket === "current-liabilities") {
-    if (hasAny(normalizedDescription, ["payable", "payables", "supplier", "creditor"])) {
+    if (
+      hasAny(normalizedDescription, [
+        "payable",
+        "payables",
+        "supplier",
+        "creditor",
+      ])
+    ) {
       return pick("trade-payables");
     }
 
-    if (hasAny(normalizedDescription, ["salary payable", "retention money", "bonus", "incentive", "pf", "esic", "employee"])) {
+    if (
+      hasAny(normalizedDescription, [
+        "salary payable",
+        "retention money",
+        "bonus",
+        "incentive",
+        "pf",
+        "esic",
+        "employee",
+      ])
+    ) {
       return pick("other-financial-liabilities");
     }
 
-    if (hasAny(normalizedDescription, ["cash credit", "cc_", "ca_", "wcdl", "buyer", "interest accrued"])) {
+    if (
+      hasAny(normalizedDescription, [
+        "cash credit",
+        "cc_",
+        "ca_",
+        "wcdl",
+        "buyer",
+        "interest accrued",
+      ])
+    ) {
       return pick("borrowings");
     }
 
@@ -678,7 +1740,15 @@ export async function getSuggestedGroupingForLedger(input: {
       return pick("property-plant-and-equipment");
     }
 
-    if (hasAny(normalizedDescription, ["deposit", "security", "fd_", "investment", "finance lease"])) {
+    if (
+      hasAny(normalizedDescription, [
+        "deposit",
+        "security",
+        "fd_",
+        "investment",
+        "finance lease",
+      ])
+    ) {
       return pick("other-financial-assets");
     }
 
@@ -686,11 +1756,28 @@ export async function getSuggestedGroupingForLedger(input: {
   }
 
   if (input.bucket === "current-assets") {
-    if (hasAny(normalizedDescription, ["inventory", "stock", "raw material", "finished goods", "work in progress", "stores and spares", "sfg"])) {
+    if (
+      hasAny(normalizedDescription, [
+        "inventory",
+        "stock",
+        "raw material",
+        "finished goods",
+        "work in progress",
+        "stores and spares",
+        "sfg",
+      ])
+    ) {
       return pick("inventories");
     }
 
-    if (hasAny(normalizedDescription, ["receivable", "receivables", "debtor", "git"])) {
+    if (
+      hasAny(normalizedDescription, [
+        "receivable",
+        "receivables",
+        "debtor",
+        "git",
+      ])
+    ) {
       return pick("trade-receivables");
     }
 
@@ -746,13 +1833,16 @@ export async function getSuggestedGroupingForLedger(input: {
   return null;
 }
 
-export async function saveLedgerGroupingOverride(input: {
-  glNumber: string;
-  glDescription: string;
-  groupKey: string;
-  subgroupKey?: string;
-  notes?: string;
-}, scope?: GroupingScope) {
+export async function saveLedgerGroupingOverride(
+  input: {
+    glNumber: string;
+    glDescription: string;
+    groupKey: string;
+    subgroupKey?: string;
+    notes?: string;
+  },
+  scope?: GroupingScope,
+   ) {
   const option = await getGroupingOption(input.groupKey, scope);
 
   if (!option) {
@@ -792,7 +1882,10 @@ export async function saveLedgerGroupingOverride(input: {
   );
 }
 
-export async function deleteLedgerGroupingOverride(glNumber: string, scope?: GroupingScope) {
+export async function deleteLedgerGroupingOverride(
+  glNumber: string,
+  scope?: GroupingScope,
+) {
   const resolvedScope = resolveScopedWorkspace(scope);
   return deleteLedgerGroupingOverrideFromDb(
     {

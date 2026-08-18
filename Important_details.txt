@@ -1,1 +1,16 @@
 Master grouping upload still takes statement-area from "data/master-grouping.json" file. So only excel file is not enough.
+
+In mapping each GL number is mapped with Grouping and Sub-grouping. Grouping details comes from master grouping file. And sub-grouping comes from "src\lib\ledger-groupings.ts" (subgroupCatalog).
+
+Sub Grouping is matched based matching keywords from catalog and GL description. If not match then first option is picked from catalog of the groupkey.
+For example : 
+  { key: "borrowings-term-loans", groupKey: "borrowings", label: "Term loans", noteNumber: "5", noteTitle: noteTitleByNumber["5"], statementArea: "balance-sheet", bucketOverride: "non-current-liabilities", keywords: ["term loan", "tl_", "vehicle loan"] },
+
+Note numbers are linked with subgrouping not grouping. in the "src\lib\ledger-groupings.ts" (subgroupCatalog).
+
+
+Ask : Wht in export statement note number is displayed by adding 1? An special logic behind that?
+
+Notes 28 to 40 are not defined in program, they are just kept as same from source format file.
+
+Will notes be same for all companies?

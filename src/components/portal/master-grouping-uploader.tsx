@@ -11,7 +11,13 @@ import { AlertTriangle, CloudUpload, Upload } from "lucide-react";
 import { PortalButton } from "@/components/ui/portal-button";
 import { usePortalSnackbar } from "@/components/ui/portal-snackbar";
 
-export function MasterGroupingUploader() {
+export function MasterGroupingUploader({
+  companyId,
+  companyName,
+}: {
+  companyId: number;
+  companyName: string;
+}) {
   const router = useRouter();
   const { showSuccess, showError } = usePortalSnackbar();
   const [open, setOpen] = useState(false);
@@ -36,6 +42,7 @@ export function MasterGroupingUploader() {
     startTransition(async () => {
       try {
         const formData = new FormData();
+        formData.set("companyId", String(companyId));
         formData.set("masterGroupingFile", file);
 
         const response = await fetch("/api/groupings/master-upload", {
@@ -77,21 +84,27 @@ export function MasterGroupingUploader() {
 
   return (
     <>
-      <PortalButton variant="secondary" type="button" startIcon={<Upload className="h-4 w-4" />} onClick={() => setOpen(true)}>
+      <PortalButton
+        variant="secondary"
+        type="button"
+        startIcon={<Upload className="h-4 w-4" />}
+        onClick={() => setOpen(true)}
+        sx={{ minHeight: 44, borderRadius: "1rem", textTransform: "none" }}
+      >
         Master grouping upload
       </PortalButton>
 
       <Dialog open={open} onClose={closeDialog} fullWidth maxWidth="sm">
-        <DialogTitle>Upload global master grouping</DialogTitle>
+        <DialogTitle>Upload master grouping for {companyName}</DialogTitle>
         <DialogContent className="space-y-4">
           <div className="mt-1 rounded-xl border border-amber-300/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="space-y-1">
-                <p className="font-semibold">Applies to every company</p>
+                <p className="font-semibold">Applies only to {companyName}</p>
                 <p>
-                  This updates the shared master grouping catalog in the database. Matching GL codes are overridden. New
-                  codes are inserted. This is not limited to the company currently selected in Mapping Studio.
+                  This replaces this company&apos;s master grouping catalog. Matching GL codes are overridden. New codes
+                  are inserted. Other companies are not changed.
                 </p>
                 <p>
                   Expected Excel columns: <span className="font-semibold">Code</span> and{" "}
@@ -101,15 +114,17 @@ export function MasterGroupingUploader() {
             </div>
           </div>
 
-          <label className="flex h-11 min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 text-sm text-slate-600 transition hover:border-amber-300 hover:bg-amber-50/40 dark:border-white/10 dark:bg-slate-950/70 dark:text-slate-300">
+          <label className="flex h-12 min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-dashed border-amber-300/80 bg-amber-50/65 px-3 text-sm text-amber-950 shadow-sm transition hover:border-amber-400 hover:bg-amber-50 dark:border-amber-400/30 dark:bg-amber-500/12 dark:text-amber-100 dark:hover:border-amber-300/50 dark:hover:bg-amber-500/18">
             <input
-              className="hidden"
+              className="sr-only"
               type="file"
               accept=".xlsx,.xls"
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             />
-            <CloudUpload className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
-            <span className="truncate">{file ? file.name : "Select Master Grouping File.xlsx"}</span>
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-500/18 dark:text-amber-200 dark:ring-amber-400/30">
+              <CloudUpload className="h-4 w-4" />
+            </span>
+            <span className="min-w-0 truncate font-medium">{file ? file.name : "Select Master Grouping File.xlsx"}</span>
           </label>
         </DialogContent>
         <DialogActions className="px-6 pb-4">

@@ -1,5 +1,6 @@
 import { buildStatementWorkbookExport } from "@/lib/export/excel";
 import { requireRequestWorkspaceContext } from "@/lib/auth";
+import { companyHasMasterGrouping, MASTER_GROUPING_REQUIRED_ERROR } from "@/lib/grouping-database";
 import { getWorkspaceSelection } from "@/lib/portal-context";
 
 export const runtime = "nodejs";
@@ -11,6 +12,10 @@ export async function GET(request: Request) {
 
   if (!context) {
     return Response.json({ error: "Authentication required." }, { status: 401 });
+  }
+
+  if (!(await companyHasMasterGrouping(context.company.id))) {
+    return Response.json({ error: MASTER_GROUPING_REQUIRED_ERROR }, { status: 409 });
   }
 
   const { buffer, fileName } = await buildStatementWorkbookExport({

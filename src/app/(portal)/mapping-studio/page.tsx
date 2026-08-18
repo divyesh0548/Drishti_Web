@@ -50,7 +50,7 @@ export default async function MappingStudioPage({
             <span className="inline-flex items-center text-sm font-medium text-slate-500 dark:text-slate-400">
               {snapshot.rows.length} source ledgers
             </span>
-            {isSiteAdmin ? <MasterGroupingUploader /> : null}
+            {isSiteAdmin ? <MasterGroupingUploader companyId={context.company.id} companyName={context.company.name} /> : null}
           </>
         }
       />

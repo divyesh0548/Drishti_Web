@@ -64,9 +64,43 @@ export const PortalButton = forwardRef<HTMLButtonElement, PortalButtonProps>(fun
               "&.Mui-disabled": {
                 color: "rgba(255,255,255,0.72)",
                 WebkitTextFillColor: "rgba(255,255,255,0.72)",
+                background: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "linear-gradient(135deg, rgba(59, 130, 246, 0.34), rgba(129, 140, 248, 0.3))"
+                    : "linear-gradient(135deg, rgba(37, 99, 235, 0.5), rgba(99, 102, 241, 0.48))",
               },
               "& .MuiButton-startIcon, & .MuiButton-endIcon": {
                 color: "#ffffff",
+              },
+            }
+          : {}),
+        ...(variant === "secondary"
+          ? {
+              borderColor: (theme) =>
+                theme.palette.mode === "dark" ? "rgba(148, 163, 184, 0.28)" : "rgba(148, 163, 184, 0.32)",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark" ? "rgba(15, 23, 42, 0.88)" : "rgba(255, 255, 255, 0.72)",
+              color: (theme) => (theme.palette.mode === "dark" ? "#e2e8f0" : "#1e293b"),
+              WebkitTextFillColor: (theme) => (theme.palette.mode === "dark" ? "#e2e8f0" : "#1e293b"),
+              "&:hover": {
+                borderColor: (theme) =>
+                  theme.palette.mode === "dark" ? "rgba(96, 165, 250, 0.42)" : "rgba(37, 99, 235, 0.28)",
+                bgcolor: (theme) =>
+                  theme.palette.mode === "dark" ? "rgba(30, 41, 59, 0.96)" : "rgba(255, 255, 255, 0.94)",
+                color: (theme) => (theme.palette.mode === "dark" ? "#f8fafc" : "#0f172a"),
+                WebkitTextFillColor: (theme) => (theme.palette.mode === "dark" ? "#f8fafc" : "#0f172a"),
+              },
+              "&.Mui-disabled": {
+                borderColor: (theme) =>
+                  theme.palette.mode === "dark" ? "rgba(148, 163, 184, 0.16)" : "rgba(148, 163, 184, 0.2)",
+                bgcolor: (theme) =>
+                  theme.palette.mode === "dark" ? "rgba(15, 23, 42, 0.5)" : "rgba(241, 245, 249, 0.72)",
+                color: (theme) => (theme.palette.mode === "dark" ? "rgba(148, 163, 184, 0.72)" : "rgba(100, 116, 139, 0.78)"),
+                WebkitTextFillColor: (theme) =>
+                  theme.palette.mode === "dark" ? "rgba(148, 163, 184, 0.72)" : "rgba(100, 116, 139, 0.78)",
+              },
+              "& .MuiButton-startIcon, & .MuiButton-endIcon": {
+                color: "inherit",
               },
             }
           : {}),

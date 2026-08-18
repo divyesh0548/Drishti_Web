@@ -236,6 +236,27 @@ const cachedSnapshot: Record<
   { sourceVersion: string; overrideVersion: string; masterGroupingVersion: string; snapshot: DerivedSnapshot }
 > = {};
 
+export function clearTrialBalanceSnapshotCache(companyId?: number, versionId?: string) {
+  if (typeof companyId === "number" && versionId) {
+    delete cachedSnapshot[`${companyId}:${versionId}`];
+    return;
+  }
+
+  if (typeof companyId === "number") {
+    const prefix = `${companyId}:`;
+    for (const key of Object.keys(cachedSnapshot)) {
+      if (key.startsWith(prefix)) {
+        delete cachedSnapshot[key];
+      }
+    }
+    return;
+  }
+
+  for (const key of Object.keys(cachedSnapshot)) {
+    delete cachedSnapshot[key];
+  }
+}
+
 function hasKeyword(text: string, keywords: string[]) {
   return keywords.some((keyword) => text.includes(keyword));
 }
@@ -480,7 +501,7 @@ export async function getTrialBalanceSnapshot(scope?: GroupingScope) {
     .join("|")}`;
   const [overrideVersion, masterGroupingVersion, overrides] = await Promise.all([
     getLedgerGroupingOverrideStamp(resolvedScope),
-    getMasterGroupingStamp(),
+    getMasterGroupingStamp(resolvedScope),
     getLedgerGroupingOverrides(resolvedScope),
   ]);
   const cacheKey = `${resolvedScope.companyId}:${resolvedScope.versionId}`;

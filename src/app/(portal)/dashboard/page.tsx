@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { MetricTile, SectionCard, StatusPill } from "@/components/portal/cards";
+import { companyHasMasterGrouping } from "@/lib/grouping-database";
 import { assertRouteAccess, canAccessRoute } from "@/lib/navigation";
 import { resolveWorkspaceCompanyFromSearchParams } from "@/lib/portal-context";
 import { getTrialBalanceSnapshot } from "@/lib/trial-balance";
@@ -14,16 +15,26 @@ export default async function DashboardPage({
   const context = await resolveWorkspaceCompanyFromSearchParams(searchParams ? await searchParams : undefined);
   assertRouteAccess(context.currentUser.role, "/dashboard");
 
-  if (!context.currentVersion) {
-    const canImport = canAccessRoute(context.currentUser.role, "/import-center");
+  const canImport = canAccessRoute(context.currentUser.role, "/import-center");
+  const hasMasterGrouping = await companyHasMasterGrouping(context.company.id);
+
+  if (!context.currentVersion || !hasMasterGrouping) {
+    const needsMasterGrouping = !hasMasterGrouping;
 
     return (
       <div className="space-y-6">
-        <SectionCard title="No version yet" eyebrow={context.company.name}>
+        <SectionCard
+          title={needsMasterGrouping ? "Master grouping required" : "No version yet"}
+          eyebrow={context.company.name}
+        >
           <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-            {canImport
-              ? "This company does not have a trial balance version yet. Upload a workbook in Imports to create Version 1 and unlock mapping, statements, and reports."
-              : "This company does not have a trial balance version yet. Ask a company admin or finance user to upload the first trial balance."}
+            {needsMasterGrouping
+              ? canImport
+                ? "This company does not have a master grouping file yet. Upload it in Imports before trial balance, mapping, statements, and reports can be used."
+                : "This company does not have a master grouping file yet. Ask the site admin to upload it before work can continue."
+              : canImport
+                ? "This company does not have a trial balance version yet. Upload a workbook in Imports to create Version 1 and unlock mapping, statements, and reports."
+                : "This company does not have a trial balance version yet. Ask a company admin or finance user to upload the first trial balance."}
           </p>
           {canImport ? (
             <Link

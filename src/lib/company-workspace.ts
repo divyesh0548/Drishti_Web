@@ -3,7 +3,8 @@ import type { Company } from "@prisma/client";
 import { parseCompanyId } from "@/lib/company-id";
 import { isRegisteredExcelProfileId } from "@/lib/export/excel/profile-options";
 import { prisma } from "@/lib/prisma";
-import { persistTrialBalanceVersionToDb } from "@/lib/trial-balance-database";
+import { persistTrialBalanceVersionToDb, findStatementVersionRecord } from "@/lib/trial-balance-database";
+import { assertCompanyHasMasterGrouping } from "@/lib/grouping-database";
 import {
   changeWorkspaceUserPassword,
   createWorkspaceUser,
@@ -278,7 +279,7 @@ function mapCompany(row: Company): CompanyRecord {
     slug: row.slug,
     name: row.name,
     code: row.code,
-    defaultVersionId: row.defaultVersionId ?? "v1",
+    defaultVersionId: row.defaultVersionId ?? "",
     excelProfileId: row.excelProfileId ?? undefined,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -579,6 +580,8 @@ export async function createCompanyVersionFromFormData(input: {
     throw new Error("Trial balance workbook is required.");
   }
 
+  await assertCompanyHasMasterGrouping(input.companyId);
+
   let sourceData: TrialBalanceSourceData | null = null;
 
   if (trialBalanceFile.size > 0) {
@@ -714,6 +717,49 @@ export async function createCompanyVersionFromFormData(input: {
   await loadCompaniesFromDb();
 
   return version;
+}
+
+export async function deleteCompanyVersion(input: { companyId: number; versionId: string }) {
+  await loadCompaniesFromDb();
+  const versionId = input.versionId.trim();
+  const versions = listCompanyVersions(input.companyId);
+  const version = versions.find((entry) => entry.id === versionId) ?? null;
+  const dbVersion = await findStatementVersionRecord(input.companyId, versionId);
+
+  if (!version && !dbVersion) {
+    throw new Error("Version not found.");
+  }
+
+  if (dbVersion) {
+    await prisma.statementVersion.delete({
+      where: { id: dbVersion.id },
+    });
+  }
+
+  const remaining = versions.filter((entry) => entry.id !== versionId);
+  const earliest = [...remaining].sort((left, right) => left.versionNumber - right.versionNumber)[0] ?? null;
+  const nextDefaultVersionId = earliest?.id ?? null;
+
+  await prisma.company.update({
+    where: { id: input.companyId },
+    data: { defaultVersionId: nextDefaultVersionId },
+  });
+
+  writeCompanyVersions(input.companyId, remaining);
+
+  try {
+    fs.rmSync(getCompanyVersionDirectory(input.companyId, versionId), { recursive: true, force: true });
+  } catch {
+    // Folder may already be missing for a DB-only version.
+  }
+
+  await loadCompaniesFromDb();
+
+  return {
+    deletedVersionId: versionId,
+    defaultVersionId: nextDefaultVersionId,
+    remaining,
+  };
 }
 
 function permissionsForRole(role: WorkspaceUserRole) {

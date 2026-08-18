@@ -6,6 +6,7 @@ import {
   saveLedgerGroupingOverride,
 } from "@/lib/ledger-groupings";
 import { requireRequestWorkspaceContext } from "@/lib/auth";
+import { companyHasMasterGrouping, MASTER_GROUPING_REQUIRED_ERROR } from "@/lib/grouping-database";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -53,6 +54,10 @@ export async function POST(request: Request) {
 
     if (!context.permissions.canManageGrouping) {
       return NextResponse.json({ error: "You do not have permission to change ledger grouping." }, { status: 403 });
+    }
+
+    if (!(await companyHasMasterGrouping(context.company.id))) {
+      return NextResponse.json({ error: MASTER_GROUPING_REQUIRED_ERROR }, { status: 409 });
     }
 
     const override = await saveLedgerGroupingOverride({

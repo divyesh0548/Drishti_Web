@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { companyHasMasterGrouping } from "@/lib/grouping-database";
 import { requireWorkspaceContext } from "@/lib/auth";
 import { companyIdToParam, parseCompanyId } from "@/lib/company-id";
 import type { ActiveWorkspaceContext, CompanyWorkspaceContext, WorkspaceContext } from "@/lib/company-workspace";
@@ -43,6 +44,14 @@ export async function resolveWorkspaceContextFromSearchParams(input?: SearchPara
   }
 
   if (!context.currentVersion) {
+    if (canAccessRoute(context.currentUser.role, "/import-center")) {
+      redirect(`/import-center?company=${context.company.id}`);
+    }
+
+    redirect(`/dashboard?company=${context.company.id}`);
+  }
+
+  if (!(await companyHasMasterGrouping(context.company.id))) {
     if (canAccessRoute(context.currentUser.role, "/import-center")) {
       redirect(`/import-center?company=${context.company.id}`);
     }

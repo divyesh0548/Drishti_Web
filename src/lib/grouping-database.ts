@@ -28,7 +28,7 @@ export type MasterGroupingUploadResult = {
 
 const statementAreaCatalogPath = path.join(process.cwd(), "data", "master-groupings.json");
 
-let cachedMasterGrouping: MasterGroupingSource | null = null;
+const cachedMasterGroupingByCompany = new Map<number, MasterGroupingSource>();
 
 function asStatementArea(value: string | undefined): LedgerGroupingOption["statementArea"] {
   if (value === "profit-and-loss" || value === "review") {
@@ -46,8 +46,13 @@ function toGroupKey(label: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-function clearMasterGroupingCache() {
-  cachedMasterGrouping = null;
+function clearMasterGroupingCache(companyId?: number) {
+  if (typeof companyId === "number") {
+    cachedMasterGroupingByCompany.delete(companyId);
+    return;
+  }
+
+  cachedMasterGroupingByCompany.clear();
 }
 
 function loadStatementAreaByLabel() {
@@ -111,7 +116,16 @@ export function parseMasterGroupingWorkbook(buffer: Buffer): ParsedMasterGroupin
   return parsed;
 }
 
-export async function upsertMasterGroupingFromWorkbook(buffer: Buffer): Promise<MasterGroupingUploadResult> {
+export async function upsertMasterGroupingFromWorkbook(companyId: number, buffer: Buffer): Promise<MasterGroupingUploadResult> {
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { id: true, name: true },
+  });
+
+  if (!company) {
+    throw new Error("Company not found.");
+  }
+
   const rows = parseMasterGroupingWorkbook(buffer);
   const statementAreaByLabel = loadStatementAreaByLabel();
   const groupsByKey = new Map<string, { groupKey: string; label: string; statementArea: LedgerGroupingOption["statementArea"] }>();
@@ -136,11 +150,17 @@ export async function upsertMasterGroupingFromWorkbook(buffer: Buffer): Promise<
 
   const [existingGroups, existingLedgers] = await Promise.all([
     prisma.masterGrouping.findMany({
-      where: { groupKey: { in: groupValues.map((group) => group.groupKey) } },
+      where: {
+        companyId,
+        groupKey: { in: groupValues.map((group) => group.groupKey) },
+      },
       select: { groupKey: true },
     }),
     prisma.masterGroupingLedger.findMany({
-      where: { glNumber: { in: ledgerValues.map((ledger) => ledger.glNumber) } },
+      where: {
+        companyId,
+        glNumber: { in: ledgerValues.map((ledger) => ledger.glNumber) },
+      },
       select: { glNumber: true },
     }),
   ]);
@@ -158,6 +178,7 @@ export async function upsertMasterGroupingFromWorkbook(buffer: Buffer): Promise<
       if (groupsToCreate.length > 0) {
         await tx.masterGrouping.createMany({
           data: groupsToCreate.map((group) => ({
+            companyId,
             groupKey: group.groupKey,
             label: group.label,
             statementArea: group.statementArea,
@@ -169,7 +190,12 @@ export async function upsertMasterGroupingFromWorkbook(buffer: Buffer): Promise<
         await Promise.all(
           chunk.map((group) =>
             tx.masterGrouping.update({
-              where: { groupKey: group.groupKey },
+              where: {
+                companyId_groupKey: {
+                  companyId,
+                  groupKey: group.groupKey,
+                },
+              },
               data: {
                 label: group.label,
                 statementArea: group.statementArea,
@@ -181,7 +207,11 @@ export async function upsertMasterGroupingFromWorkbook(buffer: Buffer): Promise<
 
       if (ledgersToCreate.length > 0) {
         await tx.masterGroupingLedger.createMany({
-          data: ledgersToCreate,
+          data: ledgersToCreate.map((ledger) => ({
+            companyId,
+            glNumber: ledger.glNumber,
+            groupKey: ledger.groupKey,
+          })),
         });
       }
 
@@ -189,7 +219,12 @@ export async function upsertMasterGroupingFromWorkbook(buffer: Buffer): Promise<
         await Promise.all(
           chunk.map((ledger) =>
             tx.masterGroupingLedger.update({
-              where: { glNumber: ledger.glNumber },
+              where: {
+                companyId_glNumber: {
+                  companyId,
+                  glNumber: ledger.glNumber,
+                },
+              },
               data: { groupKey: ledger.groupKey },
             }),
           ),
@@ -202,7 +237,7 @@ export async function upsertMasterGroupingFromWorkbook(buffer: Buffer): Promise<
     },
   );
 
-  clearMasterGroupingCache();
+  clearMasterGroupingCache(companyId);
 
   return {
     rowCount: rows.length,
@@ -221,12 +256,31 @@ function chunkItems<T>(items: T[], size: number) {
   return chunks;
 }
 
-export async function loadMasterGroupingSourceFromDb(): Promise<MasterGroupingSource> {
-  if (cachedMasterGrouping) {
-    return cachedMasterGrouping;
+export async function companyHasMasterGrouping(companyId: number) {
+  const count = await prisma.masterGroupingLedger.count({
+    where: { companyId },
+  });
+
+  return count > 0;
+}
+
+export const MASTER_GROUPING_REQUIRED_ERROR =
+  "Upload a master grouping file for this company before continuing.";
+
+export async function assertCompanyHasMasterGrouping(companyId: number) {
+  if (!(await companyHasMasterGrouping(companyId))) {
+    throw new Error(MASTER_GROUPING_REQUIRED_ERROR);
+  }
+}
+
+export async function loadMasterGroupingSourceFromDb(companyId: number): Promise<MasterGroupingSource> {
+  const cached = cachedMasterGroupingByCompany.get(companyId);
+  if (cached) {
+    return cached;
   }
 
   const groups = await prisma.masterGrouping.findMany({
+    where: { companyId },
     include: {
       ledgers: {
         orderBy: { glNumber: "asc" },
@@ -251,13 +305,14 @@ export async function loadMasterGroupingSourceFromDb(): Promise<MasterGroupingSo
     }
   }
 
-  cachedMasterGrouping = {
+  const source: MasterGroupingSource = {
     options,
     lookup,
-    stamp: `${groups.length}:${Object.keys(lookup).length}:${groups.map((group) => group.updatedAt.toISOString()).join(",")}`,
+    stamp: `${companyId}:${groups.length}:${Object.keys(lookup).length}:${groups.map((group) => group.updatedAt.toISOString()).join(",")}`,
   };
 
-  return cachedMasterGrouping;
+  cachedMasterGroupingByCompany.set(companyId, source);
+  return source;
 }
 
 function mapOverrideRow(row: {

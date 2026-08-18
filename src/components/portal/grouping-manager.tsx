@@ -48,20 +48,25 @@ function buildDraftKey(row: LedgerRow, index: number) {
   return glNumber || `__blank__:${index}:${row.glDescription.trim().toLowerCase()}`;
 }
 
+function getRowEditableState(row: LedgerRow, overrideMap: Record<string, LedgerGroupingOverride>): EditableState {
+  return {
+    groupKey: overrideMap[row.glNumber]?.groupKey ?? row.groupingKey ?? "",
+    subgroupKey: overrideMap[row.glNumber]?.subgroupKey ?? row.subgroupKey ?? "",
+    notes: overrideMap[row.glNumber]?.notes ?? row.groupingNotes ?? "",
+  };
+}
+
 function buildDraftState(
   rows: LedgerRow[],
   overrideMap: Record<string, LedgerGroupingOverride>,
 ): Record<string, EditableState> {
   return Object.fromEntries(
-    rows.map((row, index) => [
-      buildDraftKey(row, index),
-      {
-        groupKey: overrideMap[row.glNumber]?.groupKey ?? row.groupingKey ?? "",
-        subgroupKey: overrideMap[row.glNumber]?.subgroupKey ?? row.subgroupKey ?? "",
-        notes: overrideMap[row.glNumber]?.notes ?? row.groupingNotes ?? "",
-      },
-    ]),
+    rows.map((row, index) => [buildDraftKey(row, index), getRowEditableState(row, overrideMap)]),
   );
+}
+
+function isDraftDirty(draft: EditableState, original: EditableState) {
+  return draft.groupKey !== original.groupKey || draft.subgroupKey !== original.subgroupKey || draft.notes !== original.notes;
 }
 
 export function GroupingManager({
@@ -303,6 +308,8 @@ export function GroupingManager({
                   notes: "",
                 };
                 const override = overrideMap[row.glNumber];
+                const original = getRowEditableState(row, overrideMap);
+                const hasUnsavedChanges = isDraftDirty(draft, original);
                 const availableSubgroups = subgroupOptionsByGroup[draft.groupKey] ?? [];
                 const selectedSubgroup =
                   availableSubgroups.find((option) => option.key === draft.subgroupKey) ?? availableSubgroups[0] ?? null;
@@ -395,7 +402,7 @@ export function GroupingManager({
                         <PortalButton
                           variant="primary"
                           type="button"
-                          disabled={!canEdit || isPending || !draft.groupKey}
+                          disabled={!canEdit || isPending || !draft.groupKey || !hasUnsavedChanges}
                           onClick={() => saveOverride(row, draftKey)}
                         >
                           Save
