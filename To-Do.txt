@@ -1,7 +1,8 @@
-
 Provide an option to delete verion of a company. (Done - Testing pending)
 
-Try to add a function to change the note in BS/PL and also separate notes which are grouped. (Done)
+Try to add a function to change the note in BS/PL. (Done)
+
+Also separate notes which are grouped.
 
 "Ratio Analysis" Add a remarks with AI for each row and keep them editable. Add charts too. Based on available FY, display all rows for that.
 

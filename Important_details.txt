@@ -16,3 +16,19 @@ Changing note for BS/PL do not affect the extracted report. Because it just upda
 Notes 28 to 40 are not defined in program, they are just kept as same from source format file.
 
 Will notes be same for all companies?
+
+SubGrouping is missing for LTEL company.
+
+
+
+
+Connection from TB sheet to Financial report generation
+
+1. Master grouping upload with GL codes and their Grouping
+
+2. Trial Balance sheet upload with GL Code, GL description, Amount of Current/Previous year.
+
+3. Based on GL code the group is identified and based on GL description subgroup is identified based on keywords. This mapping is hard coded in program.
+
+4. In the Previous step program also gets Note number from selected SubGroup catalog.
+

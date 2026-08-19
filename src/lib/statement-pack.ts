@@ -768,7 +768,7 @@ function buildNotes(snapshot: TrialBalanceSnapshot) {
 function buildBalanceSheet(
   notes: BuiltNote[],
   statementLineOverrides?: StatementLineOverride[],
-): BuiltBalanceSheet {
+  ): BuiltBalanceSheet {
   const shareCapital = notes.find((note) => note.noteNumber === "3") ?? null;
   const reserves = notes.find((note) => note.noteNumber === "4") ?? null;
   const longTermBorrowings =
@@ -949,7 +949,7 @@ function buildBalanceSheet(
 function buildProfitAndLoss(
   notes: BuiltNote[],
   statementLineOverrides?: StatementLineOverride[],
-): BuiltProfitAndLoss {
+  ): BuiltProfitAndLoss {
   const overrides = buildStatementOverrideMap(statementLineOverrides);
   const taxExpense = notes.find((note) => note.noteNumber === "27") ?? null;
 
@@ -1038,7 +1038,7 @@ function reconcileReservesWithProfitAndLoss(
   notes: BuiltNote[],
   profitAndLoss: BuiltProfitAndLoss,
   balanceSheet: BuiltBalanceSheet,
-) {
+  ) {
   const reservesNote = notes.find((note) => note.noteNumber === "4");
 
   if (!reservesNote) {
@@ -1094,7 +1094,7 @@ function reconcileReservesWithProfitAndLoss(
 
 export async function getStatementPack(
   scope?: StatementPackScope,
-): Promise<StatementPack> {
+  ): Promise<StatementPack> {
   const snapshot = await getTrialBalanceSnapshot({
     companyId: scope?.companyId,
     versionId: scope?.versionId,
