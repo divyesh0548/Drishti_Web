@@ -8,6 +8,10 @@ For example :
 
 Note numbers are linked with subgrouping not grouping. in the "src\lib\ledger-groupings.ts" (subgroupCatalog).
 
+Role of Notes :
+Each GL gets a notenumber
+All Gls with same notenumber are summed -> Note total
+BS/PL line copies that note total and displays that in sheet.
 
 Ask : 
 

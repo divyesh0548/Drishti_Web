@@ -111,7 +111,7 @@ const bucketDefinitions: Record<
     "revenue-from-operations" | "other-income" | "cost-of-materials" | "employee-benefits" | "finance-costs" | "depreciation-amortisation" | "other-expenses" | "tax-expense" | "opening-balance-adjustments" | "unclassified"
   >,
   BucketDefinition
-> = {
+  > = {
   equity: { label: "Equity", natural: "credit" },
   "non-current-liabilities": { label: "Non-current liabilities", natural: "credit" },
   "current-liabilities": { label: "Current liabilities", natural: "credit" },
@@ -131,7 +131,7 @@ const pnlDefinitions: Record<
   | "other-expenses"
   | "tax-expense",
   BucketDefinition
-> = {
+  > = {
   "revenue-from-operations": { label: "Revenue from operations", natural: "credit" },
   "other-income": { label: "Other income", natural: "credit" },
   "cost-of-materials": { label: "Cost of materials and manufacturing", natural: "debit" },

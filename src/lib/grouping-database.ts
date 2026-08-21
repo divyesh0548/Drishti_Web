@@ -26,6 +26,36 @@ export type MasterGroupingUploadResult = {
   ledgersUpdated: number;
 };
 
+export type MasterGroupingColumnMapping = {
+  glCodeColumn: string;
+  glGroupColumn: string;
+};
+
+export type MasterGroupingColumnPreview = {
+  columns: string[];
+  suggestedGlCodeColumn: string | null;
+  suggestedGlGroupColumn: string | null;
+};
+
+const GL_CODE_COLUMN_PATTERNS = [
+  /^code$/i,
+  /^gl\s*code$/i,
+  /^gl\s*number$/i,
+  /^gl\s*no\.?$/i,
+  /^account\s*code$/i,
+  /^ledger\s*code$/i,
+];
+
+const GL_GROUP_COLUMN_PATTERNS = [
+  /^indas\s*head$/i,
+  /^ind\s*as\s*head$/i,
+  /^group(?:ing)?$/i,
+  /^group\s*name$/i,
+  /^label$/i,
+  /^head$/i,
+  /^ind\s*as\s*group$/i,
+];
+
 const statementAreaCatalogPath = path.join(process.cwd(), "data", "master-groupings.json");
 
 const cachedMasterGroupingByCompany = new Map<number, MasterGroupingSource>();
@@ -85,20 +115,136 @@ function loadStatementAreaByLabel() {
   return byLabel;
 }
 
-export function parseMasterGroupingWorkbook(buffer: Buffer): ParsedMasterGroupingRow[] {
+function readMasterGroupingSheetRows(buffer: Buffer) {
   const workbook = read(buffer, { type: "buffer" });
   const firstSheetName = workbook.SheetNames[0];
   if (!firstSheetName) {
     throw new Error("The master grouping workbook has no sheets.");
   }
 
-  const rows = utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[firstSheetName], {
+  const sheet = workbook.Sheets[firstSheetName];
+  const rows = utils.sheet_to_json<Record<string, unknown>>(sheet, {
     defval: "",
   });
 
+  return { sheet, rows };
+}
+
+function matchColumn(columns: string[], patterns: RegExp[]) {
+  for (const pattern of patterns) {
+    const match = columns.find((column) => pattern.test(column.trim()));
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
+}
+
+export function getMasterGroupingWorkbookColumns(buffer: Buffer): string[] {
+  const { sheet, rows } = readMasterGroupingSheetRows(buffer);
+
+  if (rows.length > 0) {
+    return Object.keys(rows[0]!);
+  }
+
+  const range = sheet["!ref"];
+  if (!range) {
+    return [];
+  }
+
+  const decoded = utils.decode_range(range);
+  const headers: string[] = [];
+
+  for (let columnIndex = decoded.s.c; columnIndex <= decoded.e.c; columnIndex += 1) {
+    const cellAddress = utils.encode_cell({ r: decoded.s.r, c: columnIndex });
+    const cell = sheet[cellAddress];
+    const header = String(cell?.v ?? "").trim();
+    if (header) {
+      headers.push(header);
+    }
+  }
+
+  return headers;
+}
+
+export function suggestMasterGroupingColumns(columns: string[]) {
+  const trimmed = columns.filter((column) => column.trim() !== "");
+  const suggestedGlCodeColumn =
+    matchColumn(trimmed, GL_CODE_COLUMN_PATTERNS) ??
+    matchColumn(trimmed, [/code/i, /gl/i]) ??
+    trimmed[0] ??
+    null;
+  const suggestedGlGroupColumn =
+    matchColumn(trimmed, GL_GROUP_COLUMN_PATTERNS) ??
+    matchColumn(trimmed, [/head/i, /group/i, /label/i]) ??
+    trimmed.find((column) => column !== suggestedGlCodeColumn) ??
+    null;
+
+  return {
+    suggestedGlCodeColumn,
+    suggestedGlGroupColumn,
+  };
+}
+
+export function previewMasterGroupingWorkbookColumns(buffer: Buffer): MasterGroupingColumnPreview {
+  const columns = getMasterGroupingWorkbookColumns(buffer);
+
+  if (columns.length === 0) {
+    throw new Error("No column headers found in the first sheet of the workbook.");
+  }
+
+  return {
+    columns,
+    ...suggestMasterGroupingColumns(columns),
+  };
+}
+
+function resolveMasterGroupingColumnMapping(
+  mapping: MasterGroupingColumnMapping | undefined,
+  availableColumns: string[],
+): MasterGroupingColumnMapping | undefined {
+  if (!mapping) {
+    return undefined;
+  }
+
+  const glCodeColumn = mapping.glCodeColumn.trim();
+  const glGroupColumn = mapping.glGroupColumn.trim();
+
+  if (!glCodeColumn || !glGroupColumn) {
+    throw new Error("GL code and GL grouping columns are required.");
+  }
+
+  if (!availableColumns.includes(glCodeColumn)) {
+    throw new Error(`Column "${glCodeColumn}" was not found in the workbook.`);
+  }
+
+  if (!availableColumns.includes(glGroupColumn)) {
+    throw new Error(`Column "${glGroupColumn}" was not found in the workbook.`);
+  }
+
+  if (glCodeColumn === glGroupColumn) {
+    throw new Error("GL code and GL grouping must use different columns.");
+  }
+
+  return { glCodeColumn, glGroupColumn };
+}
+
+export function parseMasterGroupingWorkbook(
+  buffer: Buffer,
+  mapping?: MasterGroupingColumnMapping,
+): ParsedMasterGroupingRow[] {
+  const { rows } = readMasterGroupingSheetRows(buffer);
+  const availableColumns = rows.length > 0 ? Object.keys(rows[0]!) : getMasterGroupingWorkbookColumns(buffer);
+  const resolvedMapping = resolveMasterGroupingColumnMapping(mapping, availableColumns);
+
   const parsed = rows.flatMap((row) => {
-    const codeValue = row.Code ?? row.code ?? row["GL Number"] ?? row["GL Code"];
-    const labelValue = row["INDAS Head"] ?? row["Ind AS Head"] ?? row["IND AS Head"] ?? row.Label ?? row.label;
+    const codeValue = resolvedMapping
+      ? row[resolvedMapping.glCodeColumn]
+      : row.Code ?? row.code ?? row["GL Number"] ?? row["GL Code"];
+    const labelValue = resolvedMapping
+      ? row[resolvedMapping.glGroupColumn]
+      : row["INDAS Head"] ?? row["Ind AS Head"] ?? row["IND AS Head"] ?? row.Label ?? row.label;
     const glNumber = String(codeValue ?? "").trim();
     const label = String(labelValue ?? "").trim();
 
@@ -110,13 +256,21 @@ export function parseMasterGroupingWorkbook(buffer: Buffer): ParsedMasterGroupin
   });
 
   if (parsed.length === 0) {
-    throw new Error('No usable rows found. Expected columns "Code" and "INDAS Head".');
+    throw new Error(
+      resolvedMapping
+        ? `No usable rows found for columns "${resolvedMapping.glCodeColumn}" and "${resolvedMapping.glGroupColumn}".`
+        : 'No usable rows found. Expected columns "Code" and "INDAS Head", or select columns during upload.',
+    );
   }
 
   return parsed;
 }
 
-export async function upsertMasterGroupingFromWorkbook(companyId: number, buffer: Buffer): Promise<MasterGroupingUploadResult> {
+export async function upsertMasterGroupingFromWorkbook(
+  companyId: number,
+  buffer: Buffer,
+  mapping?: MasterGroupingColumnMapping,
+): Promise<MasterGroupingUploadResult> {
   const company = await prisma.company.findUnique({
     where: { id: companyId },
     select: { id: true, name: true },
@@ -126,7 +280,7 @@ export async function upsertMasterGroupingFromWorkbook(companyId: number, buffer
     throw new Error("Company not found.");
   }
 
-  const rows = parseMasterGroupingWorkbook(buffer);
+  const rows = parseMasterGroupingWorkbook(buffer, mapping);
   const statementAreaByLabel = loadStatementAreaByLabel();
   const groupsByKey = new Map<string, { groupKey: string; label: string; statementArea: LedgerGroupingOption["statementArea"] }>();
   const ledgersByGl = new Map<string, string>();

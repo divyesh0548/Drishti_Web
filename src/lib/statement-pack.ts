@@ -261,7 +261,7 @@ function getFirstNoteAmount(notes: BuiltNote[], noteNumber: string) {
 function buildStatementLine(
   note: BuiltNote | null,
   particulars: string,
-): StatementDisplayRow | null {
+  ): StatementDisplayRow | null {
   if (!note) {
     return null;
   }
@@ -570,97 +570,97 @@ function buildNotes(snapshot: TrialBalanceSnapshot) {
   const noteDefinitions = [
     {
       noteNumber: "3",
-      title: "Share Capital",
+      title: noteTitleByNumber["3"],
       sheetName: "N03 Share Capital",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "4",
-      title: "Reserves and Surplus",
+      title: noteTitleByNumber["4"],
       sheetName: "N04 Reserves",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "5",
-      title: "Long-term Borrowings",
+      title: noteTitleByNumber["5"],
       sheetName: "N05 LT Borrowings",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "6",
-      title: "Deferred Tax Liabilities (Net)",
+      title: noteTitleByNumber["6"],
       sheetName: "N06 Deferred Tax",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "7",
-      title: "Long-term Provisions",
+      title: noteTitleByNumber["7"],
       sheetName: "N07 LT Provisions",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "8",
-      title: "Short-term Borrowings",
+      title: noteTitleByNumber["8"],
       sheetName: "N08 ST Borrowings",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "9",
-      title: "Trade Payables",
+      title: noteTitleByNumber["9"],
       sheetName: "N09 Trade Payables",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "10",
-      title: "Other Current Liabilities",
+      title: noteTitleByNumber["10"],
       sheetName: "N10 Other CL",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "11",
-      title: "Short-term Provisions",
+      title: noteTitleByNumber["11"],
       sheetName: "N11 ST Provisions",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "12",
-      title: "Property, Plant, Equipment and Intangible Assets",
+      title: noteTitleByNumber["12"],
       sheetName: "N12 PPE",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "13",
-      title: "Other Non-current Assets",
+      title: noteTitleByNumber["13"],
       sheetName: "N13 Other NCA",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "14",
-      title: "Inventories",
+      title: noteTitleByNumber["14"],
       sheetName: "N14 Inventories",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "15",
-      title: "Trade Receivables",
+      title: noteTitleByNumber["15"],
       sheetName: "N15 Trade Rec",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "16",
-      title: "Cash and Cash Equivalents",
+      title: noteTitleByNumber["16"],
       sheetName: "N16 Cash",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "17",
-      title: "Short-term Loans and Advances",
+      title: noteTitleByNumber["17"],
       sheetName: "N17 ST Loans",
       statementArea: "balance-sheet" as const,
     },
     {
       noteNumber: "18",
-      title: "Other Current Assets",
+      title: noteTitleByNumber["18"],
       sheetName: "N18 Other CA",
       statementArea: "balance-sheet" as const,
     },
@@ -812,41 +812,38 @@ function buildBalanceSheet(
 
   const overrides = buildStatementOverrideMap(statementLineOverrides);
   const shareholderFundRows = [
-    { particulars: "Share Capital", noteNumber: "3" },
-    { particulars: "Reserves and Surplus", noteNumber: "4" },
+    { particulars: noteTitleByNumber["3"], noteNumber: "3" },
+    { particulars: noteTitleByNumber["4"], noteNumber: "4" },
   ].map((config) =>
     buildConfiguredStatementLine(notes, overrides, "balance-sheet", config),
   );
   const nonCurrentLiabilityRows = [
-    { particulars: "Long-term Borrowings", noteNumber: "5" },
-    { particulars: "Deferred Tax Liabilities (Net)", noteNumber: "6" },
-    { particulars: "Long-term Provisions", noteNumber: "7" },
+    { particulars: noteTitleByNumber["5"], noteNumber: "5" },
+    { particulars: noteTitleByNumber["6"], noteNumber: "6" },
+    { particulars: noteTitleByNumber["7"], noteNumber: "7" },
   ].map((config) =>
     buildConfiguredStatementLine(notes, overrides, "balance-sheet", config),
   );
   const currentLiabilityRows = [
-    { particulars: "Short-term Borrowings", noteNumber: "8" },
-    { particulars: "Trade Payables", noteNumber: "9" },
-    { particulars: "Other Current Liabilities", noteNumber: "10" },
-    { particulars: "Short-term Provisions", noteNumber: "11" },
+    { particulars: noteTitleByNumber["8"], noteNumber: "8" },
+    { particulars: noteTitleByNumber["9"], noteNumber: "9" },
+    { particulars: noteTitleByNumber["10"], noteNumber: "10" },
+    { particulars: noteTitleByNumber["11"], noteNumber: "11" },
   ].map((config) =>
     buildConfiguredStatementLine(notes, overrides, "balance-sheet", config),
   );
   const nonCurrentAssetRows = [
-    {
-      particulars: "Property, Plant, Equipment and Intangible Assets",
-      noteNumber: "12",
-    },
-    { particulars: "Other Non-current Assets", noteNumber: "13" },
+    { particulars: noteTitleByNumber["12"], noteNumber: "12" },
+    { particulars: noteTitleByNumber["13"], noteNumber: "13" },
   ].map((config) =>
     buildConfiguredStatementLine(notes, overrides, "balance-sheet", config),
   );
   const currentAssetRows = [
-    { particulars: "Inventories", noteNumber: "14" },
-    { particulars: "Trade Receivables", noteNumber: "15" },
-    { particulars: "Cash and Cash Equivalents", noteNumber: "16" },
-    { particulars: "Short-term Loans and Advances", noteNumber: "17" },
-    { particulars: "Other Current Assets", noteNumber: "18" },
+    { particulars: noteTitleByNumber["14"], noteNumber: "14" },
+    { particulars: noteTitleByNumber["15"], noteNumber: "15" },
+    { particulars: noteTitleByNumber["16"], noteNumber: "16" },
+    { particulars: noteTitleByNumber["17"], noteNumber: "17" },
+    { particulars: noteTitleByNumber["18"], noteNumber: "18" },
   ].map((config) =>
     buildConfiguredStatementLine(notes, overrides, "balance-sheet", config),
   );
@@ -954,21 +951,18 @@ function buildProfitAndLoss(
   const taxExpense = notes.find((note) => note.noteNumber === "27") ?? null;
 
   const incomeRows = [
-    { particulars: "Revenue from Operations", noteNumber: "19" },
-    { particulars: "Other Income", noteNumber: "20" },
+    { particulars: noteTitleByNumber["19"], noteNumber: "19" },
+    { particulars: noteTitleByNumber["20"], noteNumber: "20" },
   ].map((config) =>
     buildConfiguredStatementLine(notes, overrides, "profit-and-loss", config),
   );
   const expenseRows = [
-    { particulars: "Cost of materials consumed", noteNumber: "21" },
-    {
-      particulars: "Changes in inventories of finished goods and work-in-progress",
-      noteNumber: "22",
-    },
-    { particulars: "Employee Benefits Expense", noteNumber: "23" },
-    { particulars: "Finance Costs", noteNumber: "24" },
-    { particulars: "Depreciation and Amortisation", noteNumber: "25" },
-    { particulars: "Other Expenses", noteNumber: "26" },
+    { particulars: noteTitleByNumber["21"], noteNumber: "21" },
+    { particulars: noteTitleByNumber["22"], noteNumber: "22" },
+    { particulars: noteTitleByNumber["23"], noteNumber: "23" },
+    { particulars: noteTitleByNumber["24"], noteNumber: "24" },
+    { particulars: noteTitleByNumber["25"], noteNumber: "25" },
+    { particulars: noteTitleByNumber["26"], noteNumber: "26" },
   ].map((config) =>
     buildConfiguredStatementLine(notes, overrides, "profit-and-loss", config),
   );

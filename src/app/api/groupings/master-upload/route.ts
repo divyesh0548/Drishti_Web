@@ -31,7 +31,16 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await upsertMasterGroupingFromWorkbook(companyId, buffer);
+    const glCodeColumn = String(formData.get("glCodeColumn") ?? "").trim();
+    const glGroupColumn = String(formData.get("glGroupColumn") ?? "").trim();
+    const mapping =
+      glCodeColumn && glGroupColumn
+        ? {
+            glCodeColumn,
+            glGroupColumn,
+          }
+        : undefined;
+    const result = await upsertMasterGroupingFromWorkbook(companyId, buffer, mapping);
 
     return NextResponse.json({
       result,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -9,7 +9,14 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { AlertTriangle, CloudUpload, Upload } from "lucide-react";
 
 import { PortalButton } from "@/components/ui/portal-button";
+import { PortalSelect } from "@/components/ui/portal-select";
 import { usePortalSnackbar } from "@/components/ui/portal-snackbar";
+
+type ColumnPreview = {
+  columns: string[];
+  suggestedGlCodeColumn: string | null;
+  suggestedGlGroupColumn: string | null;
+};
 
 export function MasterGroupingUploader({
   companyId,
@@ -22,20 +29,111 @@ export function MasterGroupingUploader({
   const { showSuccess, showError } = usePortalSnackbar();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [columns, setColumns] = useState<string[]>([]);
+  const [glCodeColumn, setGlCodeColumn] = useState("");
+  const [glGroupColumn, setGlGroupColumn] = useState("");
+
+  const resetColumnSelection = () => {
+    setColumns([]);
+    setGlCodeColumn("");
+    setGlGroupColumn("");
+  };
 
   const closeDialog = () => {
-    if (isPending) {
+    if (isPending || isPreviewLoading) {
       return;
     }
 
     setOpen(false);
     setFile(null);
+    resetColumnSelection();
   };
+
+  useEffect(() => {
+    if (!file) {
+      resetColumnSelection();
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadPreview = async () => {
+      setIsPreviewLoading(true);
+      resetColumnSelection();
+
+      try {
+        const formData = new FormData();
+        formData.set("masterGroupingFile", file);
+
+        const response = await fetch("/api/groupings/master-upload/preview", {
+          method: "POST",
+          body: formData,
+        });
+
+        const payload = (await response.json()) as ColumnPreview & { error?: string };
+
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Unable to read workbook columns.");
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setColumns(payload.columns);
+        setGlCodeColumn(payload.suggestedGlCodeColumn ?? payload.columns[0] ?? "");
+        setGlGroupColumn(
+          payload.suggestedGlGroupColumn ??
+            payload.columns.find((column) => column !== payload.suggestedGlCodeColumn) ??
+            payload.columns[1] ??
+            "",
+        );
+      } catch (previewError) {
+        if (!cancelled) {
+          setFile(null);
+          showError(previewError instanceof Error ? previewError.message : "Unable to read workbook columns.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsPreviewLoading(false);
+        }
+      }
+    };
+
+    void loadPreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [file, showError]);
+
+  const columnOptions = columns.map((column) => ({
+    value: column,
+    label: column,
+  }));
+
+  const canUpload =
+    Boolean(file) &&
+    Boolean(glCodeColumn) &&
+    Boolean(glGroupColumn) &&
+    glCodeColumn !== glGroupColumn &&
+    !isPreviewLoading;
 
   const upload = () => {
     if (!file) {
       showError("Please select a master grouping Excel workbook first.");
+      return;
+    }
+
+    if (!glCodeColumn || !glGroupColumn) {
+      showError("Select both the GL code column and the GL grouping column.");
+      return;
+    }
+
+    if (glCodeColumn === glGroupColumn) {
+      showError("GL code and GL grouping must use different columns.");
       return;
     }
 
@@ -44,6 +142,8 @@ export function MasterGroupingUploader({
         const formData = new FormData();
         formData.set("companyId", String(companyId));
         formData.set("masterGroupingFile", file);
+        formData.set("glCodeColumn", glCodeColumn);
+        formData.set("glGroupColumn", glGroupColumn);
 
         const response = await fetch("/api/groupings/master-upload", {
           method: "POST",
@@ -74,6 +174,7 @@ export function MasterGroupingUploader({
               : "Master grouping uploaded."),
         );
         setFile(null);
+        resetColumnSelection();
         setOpen(false);
         router.refresh();
       } catch (uploadError) {
@@ -107,8 +208,8 @@ export function MasterGroupingUploader({
                   are inserted. Other companies are not changed.
                 </p>
                 <p>
-                  Expected Excel columns: <span className="font-semibold">Code</span> and{" "}
-                  <span className="font-semibold">INDAS Head</span> (same layout as Master Grouping File.xlsx).
+                  After selecting a file, choose which columns contain the <span className="font-semibold">GL code</span>{" "}
+                  and <span className="font-semibold">GL grouping</span>. Extra columns are ignored.
                 </p>
               </div>
             </div>
@@ -126,12 +227,39 @@ export function MasterGroupingUploader({
             </span>
             <span className="min-w-0 truncate font-medium">{file ? file.name : "Select Master Grouping File.xlsx"}</span>
           </label>
+
+          {isPreviewLoading ? (
+            <p className="text-sm text-slate-600 dark:text-slate-300">Reading workbook columns...</p>
+          ) : null}
+
+          {columns.length > 0 && !isPreviewLoading ? (
+            <div className="space-y-3 rounded-xl border border-slate-200/80 bg-white/70 p-4 dark:border-slate-700/70 dark:bg-slate-900/40">
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Map workbook columns</p>
+              <PortalSelect
+                label="GL code column"
+                value={glCodeColumn}
+                options={columnOptions}
+                onChange={(value) => setGlCodeColumn(value)}
+              />
+              <PortalSelect
+                label="GL grouping column"
+                value={glGroupColumn}
+                options={columnOptions}
+                onChange={(value) => setGlGroupColumn(value)}
+              />
+              {glCodeColumn && glGroupColumn && glCodeColumn === glGroupColumn ? (
+                <p className="text-sm text-rose-600 dark:text-rose-300">
+                  GL code and GL grouping must use different columns.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </DialogContent>
         <DialogActions className="px-6 pb-4">
-          <PortalButton variant="secondary" type="button" disabled={isPending} onClick={closeDialog}>
+          <PortalButton variant="secondary" type="button" disabled={isPending || isPreviewLoading} onClick={closeDialog}>
             Cancel
           </PortalButton>
-          <PortalButton variant="primary" type="button" disabled={isPending || !file} onClick={upload}>
+          <PortalButton variant="primary" type="button" disabled={isPending || !canUpload} onClick={upload}>
             {isPending ? "Uploading..." : "Upload and override"}
           </PortalButton>
         </DialogActions>
